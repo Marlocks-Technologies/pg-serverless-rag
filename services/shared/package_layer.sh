@@ -9,15 +9,15 @@ rm -rf python/
 rm -f shared-layer.zip
 
 # Create layer directory structure
-mkdir -p python/lib/python3.11/site-packages
+mkdir -p python/lib/python3.12/site-packages
 
 # Install dependencies
 echo "Installing dependencies..."
-pip install -r requirements.txt -t python/lib/python3.11/site-packages --platform manylinux2014_x86_64 --only-binary=:all: --python-version 3.11
+pip install -r requirements.txt -t python/lib/python3.12/site-packages --platform manylinux2014_x86_64 --only-binary=:all: --python-version 3.12
 
 # Copy source files
 echo "Copying source files..."
-cp -r src/* python/lib/python3.11/site-packages/
+cp -r src/* python/lib/python3.12/site-packages/
 
 # Create zip file
 echo "Creating layer zip..."
