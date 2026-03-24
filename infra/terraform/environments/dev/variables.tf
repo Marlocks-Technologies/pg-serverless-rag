@@ -13,7 +13,7 @@ variable "environment" {
 variable "aws_region" {
   description = "AWS region to deploy resources"
   type        = string
-  default     = "us-east-1"
+  default     = "eu-west-1"
 }
 
 variable "aws_account_id" {
