@@ -1,0 +1,89 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Deploy stage - Deploying to sandbox account"
+      - echo "Environment: $BR_ENV"
+      - echo "Sandbox Account ID: $SANDBOX_ACCOUNT_ID"
+
+      - echo "Installing Terraform..."
+      - curl -o terraform.zip https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
+      - unzip -o terraform.zip
+      - mv terraform /usr/local/bin/
+      - terraform --version
+
+  build:
+    commands:
+      - echo "Uploading Lambda layer to S3..."
+      - aws s3 cp services/shared/shared-layer.zip s3://blockchain-realty-artifacts-34b5c043/lambda-layers/rag-platform-$BR_ENV-shared-layer.zip
+
+      - echo "Publishing Lambda layer version..."
+      - LAYER_VERSION=$(aws lambda publish-layer-version \
+          --layer-name rag-platform-$BR_ENV-shared \
+          --content S3Bucket=blockchain-realty-artifacts-34b5c043,S3Key=lambda-layers/rag-platform-$BR_ENV-shared-layer.zip \
+          --compatible-runtimes python3.12 \
+          --region eu-west-1 \
+          --query Version --output text)
+      - echo "Published layer version: $LAYER_VERSION"
+
+      - echo "Uploading Lambda functions to S3..."
+      - aws s3 cp services/document_processor/function.zip s3://blockchain-realty-artifacts-34b5c043/lambda-functions/rag-platform-$BR_ENV-document-processor.zip
+      - aws s3 cp services/chat_handler/function.zip s3://blockchain-realty-artifacts-34b5c043/lambda-functions/rag-platform-$BR_ENV-chat-handler.zip
+
+      - echo "Assuming deployment role in sandbox account..."
+      - ROLE_ARN="arn:aws:iam::544238486852:role/br-deployment-role"
+      - echo "Assuming role: $ROLE_ARN"
+
+      - ASSUME_ROLE_OUTPUT=$(aws sts assume-role \
+          --role-arn $ROLE_ARN \
+          --role-session-name codebuild-deploy-$CODEBUILD_BUILD_NUMBER-$BR_ENV \
+          --duration-seconds 3600)
+
+      - export AWS_ACCESS_KEY_ID=$(echo $ASSUME_ROLE_OUTPUT | jq -r '.Credentials.AccessKeyId')
+      - export AWS_SECRET_ACCESS_KEY=$(echo $ASSUME_ROLE_OUTPUT | jq -r '.Credentials.SecretAccessKey')
+      - export AWS_SESSION_TOKEN=$(echo $ASSUME_ROLE_OUTPUT | jq -r '.Credentials.SessionToken')
+
+      - echo "Credentials assumed successfully"
+      - aws sts get-caller-identity
+
+      - echo "Initializing Terraform for $BR_ENV environment..."
+      - cd infra/terraform/environments/$BR_ENV
+
+      - terraform init \
+          -backend-config="bucket=$STATE_BUCKET" \
+          -backend-config="key=rag-platform/$BR_ENV/terraform.tfstate" \
+          -backend-config="region=eu-west-1" \
+          -backend-config="dynamodb_table=$LOCK_TABLE"
+
+      - echo "Validating Terraform configuration..."
+      - terraform validate
+
+      - echo "Planning Terraform changes..."
+      - terraform plan -out=tfplan -var="shared_layer_version=$LAYER_VERSION"
+
+      - echo "Applying Terraform changes..."
+      - terraform apply -auto-approve tfplan
+
+      - echo "Capturing Terraform outputs..."
+      - terraform output -json > outputs.json
+      - cat outputs.json
+
+  post_build:
+    commands:
+      - echo "Deployment complete!"
+      - echo "Environment: $BR_ENV"
+      - |
+        if [ -f infra/terraform/environments/$BR_ENV/outputs.json ]; then
+          echo "Infrastructure outputs:"
+          cat infra/terraform/environments/$BR_ENV/outputs.json
+        fi
+
+artifacts:
+  files:
+    - infra/terraform/environments/$BR_ENV/outputs.json
+  name: DeployOutput
+
+cache:
+  paths:
+    - '/root/.terraform.d/plugins/**/*'
