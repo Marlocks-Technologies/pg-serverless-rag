@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/document-metadata.json",
+  "title": "DocumentMetadata",
+  "description": "Metadata schema for processed documents stored in staging bucket",
+  "type": "object",
+  "required": ["documentId", "source", "classification", "grouping", "processing"],
+  "properties": {
+    "documentId": {
+      "type": "string",
+      "description": "Unique identifier for this document (UUID)",
+      "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+    },
+    "source": {
+      "type": "object",
+      "description": "Information about the original source document",
+      "required": ["bucket", "key", "filename", "contentType"],
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "description": "Source S3 bucket name"
+        },
+        "key": {
+          "type": "string",
+          "description": "Source S3 object key"
+        },
+        "filename": {
+          "type": "string",
+          "description": "Original filename"
+        },
+        "contentType": {
+          "type": "string",
+          "description": "MIME type of the original file"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "description": "File size in bytes",
+          "minimum": 0
+        },
+        "uploadTimestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the file was uploaded to ingestion bucket"
+        },
+        "checksum": {
+          "type": "string",
+          "description": "SHA-256 checksum of the original file"
+        }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "description": "LLM-based document classification results",
+      "required": ["primaryTag", "confidence"],
+      "properties": {
+        "primaryTag": {
+          "type": "string",
+          "description": "Primary document category",
+          "enum": [
+            "invoice",
+            "hr",
+            "technical-spec",
+            "legal",
+            "finance",
+            "operations",
+            "unknown"
+          ]
+        },
+        "secondaryTags": {
+          "type": "array",
+          "description": "Optional secondary classification tags",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "description": "Classification confidence score (0.0 to 1.0)",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "grouping": {
+      "type": "object",
+      "description": "How the document is grouped in staging storage",
+      "required": ["prefix", "reason"],
+      "properties": {
+        "prefix": {
+          "type": "string",
+          "description": "S3 prefix used for grouping (e.g., 'technical-spec')"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Brief explanation for the grouping decision"
+        }
+      }
+    },
+    "processing": {
+      "type": "object",
+      "description": "Document processing metadata",
+      "required": ["timestamp", "parser"],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the document was processed"
+        },
+        "parser": {
+          "type": "string",
+          "description": "Parser used for text extraction",
+          "enum": ["pdf", "textract", "docx", "txt", "csv"]
+        },
+        "ocrUsed": {
+          "type": "boolean",
+          "description": "Whether OCR (Textract) was used"
+        },
+        "textLengthChars": {
+          "type": "integer",
+          "description": "Length of extracted text in characters",
+          "minimum": 0
+        },
+        "pageCount": {
+          "type": "integer",
+          "description": "Number of pages in the document",
+          "minimum": 1
+        },
+        "errors": {
+          "type": "array",
+          "description": "Any non-fatal errors encountered during processing",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stage": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "extractedMetadata": {
+      "type": "object",
+      "description": "Metadata extracted from the document itself",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "creationDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "language": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "documentId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "source": {
+        "bucket": "rag-dev-ingestion",
+        "key": "uploads/2026/03/system_arch.docx",
+        "filename": "system_arch.docx",
+        "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "sizeBytes": 45320,
+        "uploadTimestamp": "2026-03-24T10:15:30.000Z",
+        "checksum": "sha256:abc123..."
+      },
+      "classification": {
+        "primaryTag": "technical-spec",
+        "secondaryTags": ["architecture", "internal"],
+        "confidence": 0.92
+      },
+      "grouping": {
+        "prefix": "technical-spec",
+        "reason": "Contains system architecture and interface requirements"
+      },
+      "processing": {
+        "timestamp": "2026-03-24T10:15:45.000Z",
+        "parser": "docx",
+        "ocrUsed": false,
+        "textLengthChars": 12450,
+        "pageCount": 8
+      },
+      "extractedMetadata": {
+        "title": "System Architecture v2.0",
+        "author": "Engineering Team",
+        "creationDate": "2026-03-20T00:00:00.000Z"
+      }
+    }
+  ]
+}

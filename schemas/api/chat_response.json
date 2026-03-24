@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/chat-response.json",
+  "title": "ChatResponse",
+  "description": "Response schema for chat query endpoint",
+  "type": "object",
+  "required": ["sessionId", "answer", "citations", "requestId"],
+  "properties": {
+    "sessionId": {
+      "type": "string",
+      "description": "Session identifier from the request"
+    },
+    "answer": {
+      "type": "string",
+      "description": "Generated answer grounded in retrieved documents"
+    },
+    "citations": {
+      "type": "array",
+      "description": "Source citations supporting the answer",
+      "items": {
+        "type": "object",
+        "required": ["documentId", "sourceUri", "excerpt"],
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "description": "Unique identifier of the source document"
+          },
+          "sourceUri": {
+            "type": "string",
+            "description": "S3 URI or location of the source document",
+            "format": "uri"
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "Relevant text excerpt from the document"
+          },
+          "score": {
+            "type": "number",
+            "description": "Relevance score (0.0 to 1.0)",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Additional document metadata",
+            "properties": {
+              "filename": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "requestId": {
+      "type": "string",
+      "description": "Unique request identifier for tracking"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional response metadata",
+      "properties": {
+        "modelId": {
+          "type": "string",
+          "description": "Bedrock model used for generation"
+        },
+        "retrievalCount": {
+          "type": "integer",
+          "description": "Number of chunks retrieved"
+        },
+        "latencyMs": {
+          "type": "integer",
+          "description": "Total request latency in milliseconds"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "sessionId": "session-001",
+      "answer": "The system uses automatic failover with a 30-second detection threshold [doc: tech-spec-042].",
+      "citations": [
+        {
+          "documentId": "tech-spec-042",
+          "sourceUri": "s3://rag-dev-staging/grouped/technical-spec/tech-spec-042.pdf",
+          "excerpt": "Automatic failover is configured with a 30-second detection threshold.",
+          "score": 0.92,
+          "metadata": {
+            "filename": "system_architecture_v2.pdf",
+            "category": "technical-spec",
+            "timestamp": "2026-03-15T10:30:00.000Z"
+          }
+        }
+      ],
+      "requestId": "req-xyz789",
+      "metadata": {
+        "modelId": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "retrievalCount": 5,
+        "latencyMs": 1250
+      }
+    }
+  ]
+}

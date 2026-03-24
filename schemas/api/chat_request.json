@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/chat-request.json",
+  "title": "ChatRequest",
+  "description": "Request schema for chat query endpoint",
+  "type": "object",
+  "required": ["sessionId", "message"],
+  "properties": {
+    "sessionId": {
+      "type": "string",
+      "description": "Unique session identifier for conversation continuity",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "examples": ["session-12345", "user_abc_20260324"]
+    },
+    "message": {
+      "type": "string",
+      "description": "User's question or message",
+      "minLength": 1,
+      "maxLength": 10000
+    },
+    "topK": {
+      "type": "integer",
+      "description": "Number of document chunks to retrieve (default: 5)",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 5
+    },
+    "filters": {
+      "type": "object",
+      "description": "Optional metadata filters for retrieval",
+      "properties": {
+        "category": {
+          "type": "array",
+          "description": "Filter by document categories",
+          "items": {
+            "type": "string",
+            "enum": [
+              "invoice",
+              "hr",
+              "technical-spec",
+              "legal",
+              "finance",
+              "operations",
+              "unknown"
+            ]
+          }
+        },
+        "dateRange": {
+          "type": "object",
+          "description": "Filter by document date range",
+          "properties": {
+            "start": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "end": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "sessionId": "session-001",
+      "message": "What does the technical spec say about failover?",
+      "topK": 5,
+      "filters": {
+        "category": ["technical-spec"]
+      }
+    },
+    {
+      "sessionId": "user_jane_20260324",
+      "message": "Show me recent invoices"
+    }
+  ]
+}

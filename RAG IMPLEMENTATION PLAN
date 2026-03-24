@@ -1,0 +1,1066 @@
+# AWS Serverless RAG Platform Implementation Plan
+
+## Objective
+
+Build a production-ready, serverless Retrieval-Augmented Generation platform on AWS that:
+
+- ingests user-uploaded documents in multiple formats
+- extracts and normalizes text
+- groups and tags documents intelligently
+- stores embeddings in Amazon S3 Vectors through Amazon Bedrock Knowledge Bases
+- supports both batch and streaming chat APIs
+- preserves session history in DynamoDB
+- returns exact source citations with every grounded answer
+- remains modular so ingestion, retrieval, and chat logic can evolve independently
+
+This plan is written as an execution-ready specification for Claude to implement the project end to end.
+
+---
+
+## Execution Rules For Claude
+
+Claude must follow these rules while building the project:
+
+1. Prefer editing existing files over creating new ones.
+2. Use a modular monorepo layout with clear boundaries between infrastructure, ingestion, processing, and chat services.
+3. Choose Terraform as the default IaC implementation unless the repository already contains AWS CDK conventions.
+4. If a required AWS resource is not fully supported by Terraform providers, implement it via:
+   - Terraform-supported resources where possible
+   - `null_resource` + AWS CLI only as a temporary bridge
+   - clearly isolated custom provisioning scripts
+5. Keep document-processing infrastructure separate from chat-serving infrastructure.
+6. Use Python for Lambda functions unless the existing repository already standardizes on another runtime.
+7. Use strict least-privilege IAM policies for every Lambda and integration.
+8. Do not hardcode secrets, ARNs, or account-specific values.
+9. Every phase must include:
+   - infrastructure
+   - application code
+   - tests
+   - deployment instructions
+   - acceptance criteria
+10. The final project must be runnable in at least one AWS environment using parameterized configuration.
+
+---
+
+## High-Level Architecture
+
+### Core AWS Services
+
+- Amazon S3:
+  - `doc-ingestion-bucket` for raw uploads
+  - `doc-staging-bucket` for normalized grouped PDFs
+  - `knowledge-base-vectors-bucket` for Amazon S3 Vectors
+- AWS Lambda:
+  - `DocumentProcessorLambda`
+  - `ChatHandlerLambda`
+  - optional async history writer Lambda if decoupling is needed
+- Amazon Textract for OCR
+- Amazon Bedrock:
+  - Claude 3 Haiku for document classification/tagging
+  - primary generation model for chat
+  - embedding model for Knowledge Base ingestion
+  - Knowledge Base configured to use S3 Vectors
+- Amazon DynamoDB:
+  - `ChatHistoryTable` with `SessionId` partition key and `Timestamp` sort key
+- Amazon API Gateway:
+  - REST API for batch requests
+  - WebSocket API for streaming responses
+- Amazon EventBridge:
+  - staging-bucket document sync trigger
+  - optional async fan-out and retry workflows
+- Amazon CloudWatch:
+  - logs
+  - metrics
+  - alarms
+- AWS IAM and KMS for access control and encryption
+
+### Logical Flow
+
+1. User uploads document to `doc-ingestion-bucket`.
+2. S3 event triggers `DocumentProcessorLambda`.
+3. Lambda determines file type and extracts text.
+4. Images go through Textract.
+5. Plaintext formats are parsed directly.
+6. Text is normalized and rendered into a clean PDF.
+7. A short excerpt is sent to Bedrock Haiku for classification and grouping metadata.
+8. Resulting PDF is written to `doc-staging-bucket` under a logical prefix.
+9. EventBridge triggers Knowledge Base sync.
+10. Bedrock embeds content and stores vectors in S3 Vectors.
+11. Client sends a chat request through REST or WebSocket.
+12. `ChatHandlerLambda` loads session history from DynamoDB.
+13. Lambda performs retrieve-and-generate against Bedrock Knowledge Base.
+14. Response and citations are returned to the client.
+15. Prompt and answer are written to `ChatHistoryTable`.
+
+---
+
+## Recommended Repository Layout
+
+```text
+rag/
+  infra/
+    terraform/
+      environments/
+        dev/
+        staging/
+        prod/
+      modules/
+        s3/
+        dynamodb/
+        iam/
+        lambda/
+        apigw-rest/
+        apigw-websocket/
+        eventbridge/
+        bedrock/
+        monitoring/
+      scripts/
+  services/
+    document_processor/
+      src/
+      tests/
+      requirements.txt
+    chat_handler/
+      src/
+      tests/
+      requirements.txt
+    shared/
+      src/
+      tests/
+  prompts/
+    document_classifier/
+    chat_system/
+  schemas/
+    api/
+    metadata/
+  docs/
+  Makefile
+  pyproject.toml
+  README.md
+```
+
+If the repo is empty, Claude should create only the folders and files required to implement this plan.
+
+---
+
+## Technology Decisions
+
+### IaC
+
+Use Terraform as the primary IaC tool.
+
+Reasons:
+
+- clean modular separation by AWS service
+- easy environment parameterization
+- strong CI/CD compatibility
+- easier stateful promotion across dev, staging, prod
+
+If Bedrock Knowledge Base or S3 Vectors support is incomplete in the provider version available, implement unsupported portions using isolated provisioning scripts and document the bridge clearly.
+
+### Runtime
+
+Use Python 3.12 for Lambda functions.
+
+### Packaging
+
+Use one deployment package per Lambda with a shared internal library for:
+
+- logging
+- config loading
+- S3 helpers
+- Bedrock wrappers
+- DynamoDB access
+- metadata schemas
+- validation
+- PDF generation
+
+### API Protocols
+
+- REST for synchronous batch completion
+- WebSocket for token streaming and delayed citation emission
+
+---
+
+## Environment Strategy
+
+Create three environments:
+
+- `dev`
+- `staging`
+- `prod`
+
+Each environment must expose variables for:
+
+- AWS region
+- account ID
+- project name
+- bucket names
+- DynamoDB billing mode
+- Lambda memory and timeout
+- Bedrock model IDs
+- Knowledge Base identifiers
+- log retention
+- CORS origins
+- WebSocket connection settings
+- optional OpenSearch Serverless toggles
+
+---
+
+## Phase 1: Architecture Foundation And IaC
+
+## Goals
+
+Provision the baseline serverless platform and establish modular deployment boundaries.
+
+## Deliverables
+
+- Terraform root module and reusable service modules
+- S3 buckets for ingestion, staging, and vectors
+- DynamoDB chat history table
+- IAM roles and policies
+- Lambda deployment modules
+- API Gateway placeholders
+- CloudWatch log groups
+- KMS encryption strategy
+- environment configuration files
+- outputs for all critical resource identifiers
+
+## Detailed Tasks
+
+### 1. Bootstrap Terraform Structure
+
+Claude must:
+
+- create `infra/terraform/modules` for reusable modules
+- create `infra/terraform/environments/dev`, `staging`, and `prod`
+- configure remote state using S3 plus DynamoDB locking if state management is in scope
+- define shared locals for resource naming conventions
+- define tags for:
+  - project
+  - environment
+  - owner
+  - managed-by
+  - cost-center if available
+
+### 2. Provision S3 Buckets
+
+Create:
+
+- `doc-ingestion-bucket`
+- `doc-staging-bucket`
+- `knowledge-base-vectors-bucket`
+
+Bucket requirements:
+
+- server-side encryption enabled
+- versioning enabled
+- block public access enabled
+- lifecycle rules for transient artifacts
+- event notifications on ingestion bucket
+- prefix-based organization in staging bucket
+- optional access logs if required by org baseline
+
+Recommended prefix strategy in staging bucket:
+
+- `grouped/invoice/`
+- `grouped/hr/`
+- `grouped/technical-spec/`
+- `grouped/unknown/`
+
+### 3. Configure S3 Vectors Foundation
+
+Claude must:
+
+- provision the S3 bucket dedicated to vector storage
+- define naming and ownership conventions for the S3 Vectors index
+- create the S3 Vectors index using supported IaC or fallback provisioning
+- expose outputs needed by Bedrock Knowledge Base integration
+
+If direct provider support is missing:
+
+- create a script under `infra/terraform/scripts/`
+- invoke it from Terraform only for the unsupported step
+- keep the index configuration idempotent
+
+### 4. Provision DynamoDB
+
+Create `ChatHistoryTable` with:
+
+- partition key: `SessionId`
+- sort key: `Timestamp`
+
+Recommended settings:
+
+- on-demand billing to start
+- point-in-time recovery enabled
+- TTL attribute for optional history expiration
+- SSE enabled
+- GSI only if later needed for analytics or support tooling
+
+Recommended item shape:
+
+```json
+{
+  "SessionId": "session-123",
+  "Timestamp": "2026-03-24T12:00:00.000Z",
+  "Role": "user|assistant",
+  "Message": "text",
+  "Citations": [],
+  "Metadata": {
+    "requestId": "uuid",
+    "modelId": "string"
+  }
+}
+```
+
+### 5. IAM And Security Baseline
+
+Create least-privilege IAM roles for:
+
+- `DocumentProcessorLambda`
+- `ChatHandlerLambda`
+- Bedrock Knowledge Base access
+- EventBridge triggers
+- API Gateway integration permissions
+
+Permissions must be scoped to:
+
+- specific bucket ARNs and prefixes
+- specific DynamoDB table
+- required Textract actions
+- required Bedrock model invocation actions
+- CloudWatch logs write access only where needed
+
+### 6. Monitoring Baseline
+
+Provision:
+
+- CloudWatch log groups with retention
+- metric filters for Lambda errors
+- alarms for:
+  - Lambda errors
+  - Lambda throttles
+  - API 5xx responses
+  - dead-letter or retry exhaustion if implemented
+
+## Phase 1 Acceptance Criteria
+
+- Terraform plan succeeds for `dev`
+- All buckets, DynamoDB, IAM roles, and logs are provisioned
+- Resource names are environment-scoped
+- No wildcard IAM permissions beyond unavoidable service constraints
+- Outputs expose bucket names, table name, API IDs, and Knowledge Base wiring inputs
+
+---
+
+## Phase 2: Intelligent Document Processing And OCR Pipeline
+
+## Goals
+
+Handle multi-format uploads, extract text, normalize documents, classify content, and write grouped PDFs to the staging bucket.
+
+## Deliverables
+
+- `DocumentProcessorLambda`
+- shared parsing and normalization library
+- OCR integration
+- PDF generation pipeline
+- metadata classification prompt and handler
+- structured staging output
+- unit and integration tests
+
+## Supported Input Types
+
+Initial support:
+
+- `.pdf`
+- `.png`
+- `.jpg`
+- `.jpeg`
+- `.txt`
+- `.csv`
+- `.docx`
+
+Optional later support:
+
+- `.xls`
+- `.xlsx`
+- `.pptx`
+
+## Lambda Responsibilities
+
+`DocumentProcessorLambda` must:
+
+1. receive S3 event
+2. download uploaded object
+3. detect MIME type and extension
+4. choose extraction path
+5. normalize extracted text
+6. build classification snippet
+7. invoke Bedrock Haiku for tags and grouping
+8. generate clean PDF
+9. store PDF in staging bucket under group prefix
+10. write metadata manifest alongside PDF
+11. emit structured logs and metrics
+
+## Parsing Strategy
+
+### Images
+
+Use Textract for:
+
+- `.png`
+- `.jpg`
+- `.jpeg`
+
+Implementation requirements:
+
+- prefer synchronous Textract for small files if sufficient
+- fall back to async job flow for larger inputs if needed
+- preserve line ordering as best as possible
+- clean repeated whitespace and OCR artifacts
+
+### PDFs
+
+Use a PDF text extraction library first.
+
+If text extraction yields too little content:
+
+- treat the PDF as scanned
+- run Textract on page images or document analysis path
+
+### TXT And CSV
+
+- decode with UTF-8 fallback handling
+- preserve line boundaries
+- for CSV, flatten rows into readable text sections with headers
+
+### DOCX
+
+- extract paragraphs and headings
+- preserve basic structural separators
+
+## Text Normalization Requirements
+
+Normalize all extracted text into a canonical form:
+
+- trim null bytes and control chars
+- collapse excessive whitespace
+- preserve paragraphs
+- preserve tables in a readable plain-text form
+- attach source metadata:
+  - original filename
+  - content type
+  - upload timestamp
+  - source bucket and key
+
+## PDF Generation Requirements
+
+Use either ReportLab or FPDF.
+
+Default to ReportLab unless the repo already uses FPDF.
+
+The normalized PDF must include:
+
+- document title
+- source filename
+- inferred category
+- extraction timestamp
+- normalized body text
+
+Store output as:
+
+- `s3://doc-staging-bucket/grouped/<category>/<document-id>.pdf`
+
+Also write metadata JSON:
+
+- `s3://doc-staging-bucket/grouped/<category>/<document-id>.metadata.json`
+
+Suggested metadata schema:
+
+```json
+{
+  "documentId": "uuid",
+  "source": {
+    "bucket": "doc-ingestion-bucket",
+    "key": "uploads/file.docx",
+    "filename": "file.docx",
+    "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  },
+  "classification": {
+    "primaryTag": "Technical Spec",
+    "secondaryTags": ["Architecture", "Internal"],
+    "confidence": 0.92
+  },
+  "grouping": {
+    "prefix": "technical-spec",
+    "reason": "Contains system architecture and interface requirements"
+  },
+  "processing": {
+    "ocrUsed": false,
+    "parser": "docx",
+    "timestamp": "2026-03-24T12:00:00.000Z"
+  }
+}
+```
+
+## LLM Classification Step
+
+Use Claude 3 Haiku through Bedrock.
+
+Claude must implement:
+
+- a dedicated prompt template stored outside application code
+- a strict JSON output contract
+- retry logic for malformed model responses
+- schema validation before accepting classification
+
+Prompt responsibilities:
+
+- classify document type
+- assign one primary category
+- assign optional secondary tags
+- generate a short grouping reason
+- avoid hallucinating details not present in the text
+
+Recommended categories:
+
+- `invoice`
+- `hr`
+- `technical-spec`
+- `legal`
+- `finance`
+- `operations`
+- `unknown`
+
+Only send a short sanitized excerpt to the model, not the full document, unless the document is small enough and cost is acceptable.
+
+## Error Handling
+
+For unsupported or failed documents:
+
+- write an error manifest to a dedicated prefix like `failed/`
+- log a structured failure reason
+- never silently drop a file
+
+## Phase 2 Acceptance Criteria
+
+- Uploading each supported file type triggers the Lambda
+- OCR succeeds for image-based inputs
+- normalized PDFs are generated and saved in grouped prefixes
+- classification metadata is attached and valid JSON
+- failures are visible and diagnosable
+- unit tests cover extraction and classification routing logic
+
+---
+
+## Phase 3: RAG Implementation With S3 Vectors
+
+## Goals
+
+Connect processed documents to Bedrock Knowledge Bases and S3 Vectors so new grouped PDFs become searchable with grounded citations.
+
+## Deliverables
+
+- Bedrock Knowledge Base configuration
+- embedding model selection
+- data source binding to staging bucket
+- backend binding to S3 Vectors
+- automated sync mechanism
+- retrieval validation tests
+
+## Knowledge Base Configuration
+
+Claude must configure:
+
+- one Knowledge Base per environment
+- S3 staging bucket as the document source
+- S3 Vectors as the vector backend
+- embedding model:
+  - default: Amazon Titan Text Embeddings v2
+  - optional: Cohere if region and account support it
+
+Knowledge Base requirements:
+
+- use chunking tuned for medium-length enterprise docs
+- store enough metadata to support source citation and filtering
+- include category/group prefixes when possible
+
+Recommended initial chunk settings:
+
+- chunk size: 600 to 1000 tokens
+- overlap: 10% to 20%
+
+## Automated Sync
+
+Set up EventBridge so that a new grouped PDF or metadata JSON in the staging bucket triggers a Knowledge Base sync workflow.
+
+Recommended pattern:
+
+1. S3 object created in `grouped/`
+2. EventBridge rule matches object create event
+3. target triggers sync orchestration
+4. sync only the relevant data source if partial sync is supported
+5. record sync result in logs
+
+If Knowledge Base sync APIs are coarse-grained, Claude should still automate them and ensure duplicate triggers are tolerated.
+
+## Metadata And Retrieval Quality
+
+Claude must preserve metadata from Phase 2 into retrieval context wherever Bedrock supports it.
+
+At minimum, searchable metadata should include:
+
+- category
+- source filename
+- original key
+- processed timestamp
+- document ID
+
+## Validation Tasks
+
+Claude must implement a validation flow that:
+
+- uploads a sample document
+- waits for processing
+- triggers or observes sync
+- performs a retrieval test query
+- verifies cited chunks reference the expected document
+
+## Phase 3 Acceptance Criteria
+
+- grouped PDFs are ingested by Bedrock Knowledge Base
+- embeddings are stored in S3 Vectors
+- retrieval returns relevant chunks
+- citations map back to staged documents
+- sync flow is automatic after new staged documents arrive
+
+---
+
+## Phase 4: Backend API And Chat Logic
+
+## Goals
+
+Expose batch and streaming chat interfaces, preserve history, and return exact citations.
+
+## Deliverables
+
+- REST API
+- WebSocket API
+- `ChatHandlerLambda`
+- session history storage
+- retrieve-and-generate flow
+- streaming flow
+- async history persistence
+- API schemas and tests
+
+## API Design
+
+### REST Endpoints
+
+Create at minimum:
+
+- `POST /chat/query`
+- `GET /chat/history/{sessionId}`
+- `GET /health`
+
+`POST /chat/query` request shape:
+
+```json
+{
+  "sessionId": "session-123",
+  "message": "What does the technical spec say about failover?",
+  "topK": 5,
+  "filters": {
+    "category": ["technical-spec"]
+  }
+}
+```
+
+Response shape:
+
+```json
+{
+  "sessionId": "session-123",
+  "answer": "Grounded answer text",
+  "citations": [
+    {
+      "documentId": "uuid",
+      "sourceUri": "s3://doc-staging-bucket/grouped/technical-spec/doc.pdf",
+      "excerpt": "Quoted supporting passage",
+      "score": 0.91
+    }
+  ],
+  "requestId": "uuid"
+}
+```
+
+### WebSocket Events
+
+Create event types such as:
+
+- `chat.start`
+- `chat.chunk`
+- `chat.citations`
+- `chat.complete`
+- `chat.error`
+
+Suggested client message:
+
+```json
+{
+  "action": "chat",
+  "sessionId": "session-123",
+  "message": "Stream the answer for this question"
+}
+```
+
+## ChatHandlerLambda Responsibilities
+
+### Shared Logic
+
+For both REST and WebSocket paths:
+
+1. validate input
+2. load recent conversation history from DynamoDB
+3. construct system and user prompt
+4. perform retrieval
+5. perform generation
+6. return answer with citations
+7. persist prompt and response asynchronously
+
+### Batch Flow
+
+Use Bedrock `RetrieveAndGenerate` against the Knowledge Base.
+
+Requirements:
+
+- pass session context
+- include retrieval constraints when available
+- return exact source references and excerpts from Bedrock output
+- normalize citations into a stable API schema
+
+### Streaming Flow
+
+Use a two-step strategy:
+
+1. call retrieval first against the Knowledge Base or vector-backed retrieval endpoint
+2. call generation with response streaming
+3. stream chunks over WebSocket
+4. send citations in the terminal event after generation completes
+
+This is required because citation packaging often differs between synchronous grounded generation and token streaming.
+
+### History Management
+
+Store both user and assistant turns in DynamoDB.
+
+Recommended retrieval policy:
+
+- fetch last N turns, such as 10 to 20
+- trim by token budget, not only count
+- exclude oversized citations from history body if necessary
+
+History write strategy:
+
+- synchronous write for user prompt if simplicity is preferred
+- asynchronous write for assistant response to reduce tail latency
+
+## Prompting Strategy
+
+Claude must create prompt assets for:
+
+- system grounding behavior
+- citation behavior
+- concise answer formatting
+- refusal when retrieval confidence is low
+- follow-up handling using session history
+
+System prompt requirements:
+
+- answer only from retrieved sources and conversational context
+- say when the answer is not supported by retrieved evidence
+- never fabricate citations
+- keep quoted evidence clearly separated from generated synthesis
+
+## API Security
+
+Implement:
+
+- request validation
+- payload size limits
+- CORS controls for REST
+- WebSocket connection management
+- optional auth layer placeholder using Cognito or custom authorizer if auth is not implemented initially
+
+## Phase 4 Acceptance Criteria
+
+- REST endpoint returns answer plus citations
+- WebSocket endpoint streams tokens and ends with citations
+- session history is loaded and updated correctly
+- unsupported or low-confidence queries return safe responses
+- integration tests cover both REST and WebSocket flows
+
+---
+
+## Phase 5: Latency And Cost Optimization
+
+## Goals
+
+Make the platform cheaper, faster, and easier to operate without sacrificing modularity.
+
+## Deliverables
+
+- tuned Lambda settings
+- client reuse and warm path optimization
+- optional hot-tier search strategy
+- observability metrics for performance and cost
+- optimization notes in deployment docs
+
+## Required Optimizations
+
+### Lambda
+
+For `ChatHandlerLambda`:
+
+- allocate higher memory to gain CPU
+- initialize AWS SDK clients outside handler
+- reuse HTTP connections
+- minimize cold-start package size
+- cache static config between invocations when safe
+
+For `DocumentProcessorLambda`:
+
+- tune timeout based on Textract and PDF generation behavior
+- isolate heavyweight dependencies
+- use ephemeral storage only if required
+
+### Retrieval Strategy
+
+Default store:
+
+- S3 Vectors for large-scale, cost-efficient archive retrieval
+
+Optional hot-tier:
+
+- if a subset of documents needs very high QPS, mirror those vectors into Amazon OpenSearch Serverless
+- keep archive in S3 Vectors
+- add routing logic based on category, prefix, or popularity
+
+Claude should implement the hot-tier only behind a feature flag, not as the default path.
+
+### Sync And Event Efficiency
+
+- debounce duplicate sync events if event volume is high
+- avoid unnecessary reprocessing of unchanged documents
+- store document hashes in metadata to support idempotency
+
+### Cost Controls
+
+- use on-demand DynamoDB initially
+- choose Haiku for classification instead of larger models
+- limit excerpt size sent for classification
+- tune retrieval topK conservatively
+- log token and invocation metrics for later tuning
+
+## Phase 5 Acceptance Criteria
+
+- SDK clients are reused across invocations
+- memory and timeout settings are parameterized
+- metrics expose latency by stage
+- optional OpenSearch hot-tier is isolated behind configuration
+- overall architecture remains modular
+
+---
+
+## Cross-Cutting Concerns
+
+## Security
+
+Claude must implement:
+
+- encryption at rest for S3 and DynamoDB
+- least-privilege IAM
+- no secrets in source control
+- environment variables for non-secret config only
+- Secrets Manager or Parameter Store if secrets become necessary
+- input validation for all APIs
+- bucket policies preventing public access
+
+## Observability
+
+Every Lambda must emit structured JSON logs including:
+
+- request ID
+- session ID if present
+- document ID if present
+- action
+- duration
+- status
+- error code if failed
+
+Track metrics for:
+
+- ingestion count
+- processing failures
+- OCR latency
+- classification latency
+- Knowledge Base sync count
+- retrieval latency
+- generation latency
+- citation count
+- API errors
+
+## Idempotency
+
+Claude must ensure:
+
+- document processing is idempotent by source object key plus checksum
+- sync triggers tolerate duplicate S3 events
+- history writes do not duplicate the same assistant response on retry
+
+## Testing Strategy
+
+Create:
+
+- unit tests for parsers, normalizers, prompt formatters, citation mapping
+- integration tests for Lambda handlers with mocked AWS clients
+- end-to-end smoke tests for upload → process → sync → query
+- contract tests for API request and response schemas
+
+## Deployment Strategy
+
+Claude must provide deployment steps for:
+
+1. bootstrap environment configuration
+2. package Lambda functions
+3. apply Terraform for foundation
+4. deploy unsupported bridge scripts if needed
+5. upload a sample document
+6. validate processing and sync
+7. test REST and WebSocket chat flows
+
+## CI/CD Expectations
+
+If CI/CD is in scope, create a pipeline that:
+
+- runs lint and tests
+- packages Lambdas
+- runs Terraform fmt and validate
+- runs Terraform plan for target environment
+- requires approval before apply in non-dev environments
+
+---
+
+## Implementation Order For Claude
+
+Claude should execute work in this order:
+
+1. create repository structure
+2. implement Terraform foundations
+3. provision S3, DynamoDB, IAM, logs
+4. implement shared Python library
+5. implement `DocumentProcessorLambda`
+6. implement OCR and parsing adapters
+7. implement PDF generation and metadata output
+8. implement Bedrock classification prompt and validation
+9. wire staging bucket and sync trigger
+10. configure Knowledge Base and S3 Vectors integration
+11. implement `ChatHandlerLambda`
+12. implement REST API
+13. implement WebSocket API
+14. implement DynamoDB history reads and writes
+15. implement retrieval and citation mapping
+16. add tests across services
+17. add observability and alarms
+18. tune performance settings
+19. run end-to-end validation
+20. document deployment and operational steps
+
+Claude should not start the frontend unless explicitly requested.
+
+---
+
+## Required Files Claude Should Create
+
+The following file set is recommended if the repo starts empty:
+
+```text
+infra/terraform/environments/dev/main.tf
+infra/terraform/environments/dev/variables.tf
+infra/terraform/environments/dev/outputs.tf
+infra/terraform/modules/s3/main.tf
+infra/terraform/modules/dynamodb/main.tf
+infra/terraform/modules/iam/main.tf
+infra/terraform/modules/lambda/main.tf
+infra/terraform/modules/apigw-rest/main.tf
+infra/terraform/modules/apigw-websocket/main.tf
+infra/terraform/modules/eventbridge/main.tf
+infra/terraform/modules/bedrock/main.tf
+infra/terraform/modules/monitoring/main.tf
+
+services/shared/src/...
+services/document_processor/src/handler.py
+services/chat_handler/src/handler.py
+services/document_processor/tests/...
+services/chat_handler/tests/...
+
+prompts/document_classifier/system.txt
+prompts/chat_system/system.txt
+
+schemas/api/chat_request.json
+schemas/api/chat_response.json
+schemas/metadata/document_metadata.json
+```
+
+Claude may adjust filenames if needed, but the separation of concerns must remain.
+
+---
+
+## Definition Of Done
+
+The project is complete only when all of the following are true:
+
+- infrastructure is modular and deployable per environment
+- raw uploads trigger document processing automatically
+- supported documents are parsed or OCR’d correctly
+- normalized grouped PDFs are written to staging
+- Bedrock Knowledge Base sync is automated
+- vectors are stored in S3 Vectors
+- REST chat returns grounded answers with citations
+- WebSocket chat streams responses and emits citations at completion
+- session history is stored and reused
+- logs, alarms, and tests are included
+- deployment steps are reproducible
+- the system can be validated with at least one real sample document and one successful grounded query
+
+---
+
+## Explicit Build Instructions For Claude
+
+Claude should interpret this plan as a build order, not as a discussion document.
+
+Claude must:
+
+- implement the infrastructure first
+- implement the two Lambda services and shared library second
+- wire Bedrock Knowledge Base and S3 Vectors next
+- expose REST and WebSocket APIs after retrieval works
+- add tests before declaring any phase complete
+- keep unsupported provider gaps isolated and documented
+- return a summary after each phase including:
+  - files created or changed
+  - infrastructure deployed or prepared
+  - remaining blockers
+  - validation evidence
+
+Claude must not skip:
+
+- IAM scoping
+- retries and error handling
+- citation normalization
+- idempotency
+- structured logging
+- environment parameterization
+- end-to-end validation
