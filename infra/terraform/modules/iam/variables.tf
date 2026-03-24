@@ -28,16 +28,6 @@ variable "chat_history_table_arn" {
   type        = string
 }
 
-variable "document_processor_log_group_arn" {
-  description = "ARN of the CloudWatch log group for document processor Lambda"
-  type        = string
-}
-
-variable "chat_handler_log_group_arn" {
-  description = "ARN of the CloudWatch log group for chat handler Lambda"
-  type        = string
-}
-
 variable "bedrock_region" {
   description = "AWS region for Bedrock model invocations"
   type        = string
@@ -64,18 +54,6 @@ variable "kms_key_arn" {
 
 variable "websocket_api_arn" {
   description = "ARN of the WebSocket API Gateway (for execute-api:ManageConnections)"
-  type        = string
-  default     = "*"
-}
-
-variable "document_processor_lambda_arn" {
-  description = "ARN of the document processor Lambda (for EventBridge role)"
-  type        = string
-  default     = "*"
-}
-
-variable "chat_handler_lambda_arn" {
-  description = "ARN of the chat handler Lambda (for EventBridge role)"
   type        = string
   default     = "*"
 }

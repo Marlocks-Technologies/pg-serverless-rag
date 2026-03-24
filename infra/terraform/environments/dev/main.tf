@@ -48,8 +48,8 @@ module "s3" {
   aws_region   = var.aws_region
   kms_key_arn  = var.kms_key_arn
 
-  # Document processor Lambda will be invoked directly on ingestion
-  ingestion_notification_target_arn  = module.document_processor_lambda.function_arn
+  # S3 notification will be added separately after Lambda is created
+  ingestion_notification_target_arn  = ""
   ingestion_notification_target_type = "lambda"
 
   tags = local.common_tags
@@ -83,21 +83,10 @@ module "iam" {
   vectors_bucket_arn     = module.s3.vectors_bucket_arn
   chat_history_table_arn = module.dynamodb.table_arn
 
-  document_processor_log_group_arn = module.document_processor_lambda.log_group_arn
-  chat_handler_log_group_arn       = module.chat_handler_lambda.log_group_arn
-
-  websocket_api_arn             = "${module.apigw_websocket.execution_arn}/*"
-  document_processor_lambda_arn = module.document_processor_lambda.function_arn
-  chat_handler_lambda_arn       = module.chat_handler_lambda.function_arn
-
-  kms_key_arn = var.kms_key_arn
+  websocket_api_arn = "${module.apigw_websocket.execution_arn}/*"
+  kms_key_arn       = var.kms_key_arn
 
   tags = local.common_tags
-
-  depends_on = [
-    module.document_processor_lambda,
-    module.chat_handler_lambda,
-  ]
 }
 
 # ─── Document Processor Lambda ────────────────────────────────────────────────
@@ -134,8 +123,6 @@ module "document_processor_lambda" {
 
   log_retention_days = 30
   tags               = local.common_tags
-
-  depends_on = [module.iam]
 }
 
 # ─── Chat Handler Lambda ──────────────────────────────────────────────────────
@@ -172,8 +159,6 @@ module "chat_handler_lambda" {
 
   log_retention_days = 30
   tags               = local.common_tags
-
-  depends_on = [module.iam]
 }
 
 # ─── REST API Gateway ─────────────────────────────────────────────────────────
@@ -261,4 +246,38 @@ module "monitoring" {
   throttle_threshold               = 10
 
   tags = local.common_tags
+}
+
+# ─── Additional IAM Policies (After Lambda Creation) ──────────────────────────
+
+# EventBridge policy to invoke Lambda functions
+data "aws_iam_policy_document" "eventbridge_lambda_policy" {
+  statement {
+    sid    = "InvokeLambda"
+    effect = "Allow"
+    actions = [
+      "lambda:InvokeFunction",
+    ]
+    resources = [
+      module.document_processor_lambda.function_arn,
+      module.chat_handler_lambda.function_arn,
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "eventbridge_lambda" {
+  name   = "${var.project_name}-${var.environment}-eventbridge-lambda-policy"
+  role   = module.iam.eventbridge_role_name
+  policy = data.aws_iam_policy_document.eventbridge_lambda_policy.json
+}
+
+# S3 notification configuration for document processor Lambda
+resource "aws_s3_bucket_notification" "ingestion_lambda_trigger" {
+  bucket = module.s3.ingestion_bucket_name
+
+  lambda_function {
+    lambda_function_arn = module.document_processor_lambda.function_arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "uploads/"
+  }
 }

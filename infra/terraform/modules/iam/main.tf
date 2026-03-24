@@ -82,8 +82,7 @@ data "aws_iam_policy_document" "document_processor_policy" {
       "logs:PutLogEvents",
     ]
     resources = [
-      var.document_processor_log_group_arn,
-      "${var.document_processor_log_group_arn}:*",
+      "arn:aws:logs:*:${var.aws_account_id}:log-group:/aws/lambda/${var.project_name}-${var.environment}-document-processor*",
     ]
   }
 
@@ -171,8 +170,7 @@ data "aws_iam_policy_document" "chat_handler_policy" {
       "logs:PutLogEvents",
     ]
     resources = [
-      var.chat_handler_log_group_arn,
-      "${var.chat_handler_log_group_arn}:*",
+      "arn:aws:logs:*:${var.aws_account_id}:log-group:/aws/lambda/${var.project_name}-${var.environment}-chat-handler*",
     ]
   }
 
@@ -320,22 +318,4 @@ resource "aws_iam_role" "eventbridge" {
   })
 }
 
-data "aws_iam_policy_document" "eventbridge_policy" {
-  statement {
-    sid    = "InvokeLambda"
-    effect = "Allow"
-    actions = [
-      "lambda:InvokeFunction",
-    ]
-    resources = [
-      var.document_processor_lambda_arn,
-      var.chat_handler_lambda_arn,
-    ]
-  }
-}
-
-resource "aws_iam_role_policy" "eventbridge" {
-  name   = "${var.project_name}-${var.environment}-eventbridge-policy"
-  role   = aws_iam_role.eventbridge.id
-  policy = data.aws_iam_policy_document.eventbridge_policy.json
-}
+# EventBridge policy will be attached in main.tf after Lambda functions are created
