@@ -40,6 +40,12 @@ variable "haiku_model_id" {
   default     = "anthropic.claude-3-haiku-20240307-v1:0"
 }
 
+variable "generation_model_id" {
+  description = "Bedrock model ID for text generation"
+  type        = string
+  default     = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+}
+
 variable "knowledge_base_id" {
   description = "Bedrock Knowledge Base ID (used to scope Bedrock KB IAM actions)"
   type        = string

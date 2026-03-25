@@ -1,9 +1,9 @@
-project_name = "rag"
+project_name = "rag-mt"
 environment  = "dev"
-aws_region   = "us-east-1"
+aws_region   = "eu-west-1"
 
-# Fill in your AWS account ID
-# aws_account_id = "123456789012"
+# AWS account ID
+aws_account_id = "596308304978"
 
 # Optional: provide a KMS key ARN to enable KMS encryption instead of AES256
 # kms_key_arn = ""

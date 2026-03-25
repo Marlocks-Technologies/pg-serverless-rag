@@ -8,17 +8,17 @@ terraform {
     }
   }
 
-  backend "s3" {
-    # Fill in via backend.hcl or -backend-config flags:
-    #   bucket         = "<your-tf-state-bucket>"
-    #   key            = "rag/dev/terraform.tfstate"
-    #   region         = "us-east-1"
-    #   dynamodb_table = "<your-tf-lock-table>"
-    #   encrypt        = true
-    #
-    # Usage:
-    #   terraform init -backend-config=backend.hcl
-  }
+  # backend "s3" {
+  #   # Fill in via backend.hcl or -backend-config flags:
+  #   #   bucket         = "<your-tf-state-bucket>"
+  #   #   key            = "rag/dev/terraform.tfstate"
+  #   #   region         = "us-east-1"
+  #   #   dynamodb_table = "<your-tf-lock-table>"
+  #   #   encrypt        = true
+  #   #
+  #   # Usage:
+  #   #   terraform init -backend-config=backend.hcl
+  # }
 }
 
 provider "aws" {
@@ -83,10 +83,22 @@ module "iam" {
   vectors_bucket_arn     = module.s3.vectors_bucket_arn
   chat_history_table_arn = module.dynamodb.table_arn
 
-  websocket_api_arn = "${module.apigw_websocket.execution_arn}/*"
-  kms_key_arn       = var.kms_key_arn
+  websocket_api_arn   = "${module.apigw_websocket.execution_arn}/*"
+  generation_model_id = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+  kms_key_arn         = var.kms_key_arn
 
   tags = local.common_tags
+}
+
+# ─── Shared Lambda Layer ──────────────────────────────────────────────────────
+
+resource "aws_lambda_layer_version" "shared" {
+  layer_name          = "${var.project_name}-${var.environment}-shared-layer"
+  s3_bucket           = "rag-mt-lambda-layers-${var.aws_account_id}"
+  s3_key              = "shared-layer.zip"
+  compatible_runtimes = ["python3.12"]
+
+  description = "Shared utilities for RAG platform Lambda functions"
 }
 
 # ─── Document Processor Lambda ────────────────────────────────────────────────
@@ -102,6 +114,7 @@ module "document_processor_lambda" {
   role_arn         = module.iam.document_processor_role_arn
   memory_size      = 1024
   timeout          = 300
+  layers           = [aws_lambda_layer_version.shared.arn]
 
   environment_variables = {
     AWS_ACCOUNT_ID      = var.aws_account_id
@@ -137,6 +150,7 @@ module "chat_handler_lambda" {
   role_arn         = module.iam.chat_handler_role_arn
   memory_size      = 512
   timeout          = 30
+  layers           = [aws_lambda_layer_version.shared.arn]
 
   environment_variables = {
     AWS_ACCOUNT_ID      = var.aws_account_id
@@ -159,19 +173,53 @@ module "chat_handler_lambda" {
   tags               = local.common_tags
 }
 
+# ─── Document Manager Lambda ──────────────────────────────────────────────────
+
+module "document_manager_lambda" {
+  source = "../../modules/lambda"
+
+  function_name    = "${var.project_name}-${var.environment}-document-manager"
+  handler          = "handler.handler"
+  runtime          = "python3.12"
+  filename         = var.document_manager_zip
+  source_code_hash = filebase64sha256(var.document_manager_zip)
+  role_arn         = module.iam.document_manager_role_arn
+  memory_size      = 512
+  timeout          = 30
+  layers           = [aws_lambda_layer_version.shared.arn]
+
+  environment_variables = {
+    AWS_ACCOUNT_ID     = var.aws_account_id
+    INGESTION_BUCKET   = "${var.project_name}-${var.environment}-doc-ingestion"
+    STAGING_BUCKET     = "${var.project_name}-${var.environment}-doc-staging"
+    VECTORS_BUCKET     = "${var.project_name}-${var.environment}-kb-vectors"
+    DOCUMENTS_TABLE    = "${var.project_name}-${var.environment}-documents"
+    LOG_LEVEL          = "INFO"
+    ENVIRONMENT        = var.environment
+  }
+
+  allow_apigateway_invocation = true
+  apigateway_source_arn       = "${module.apigw_rest.execution_arn}/*/*"
+
+  log_retention_days = 30
+  tags               = local.common_tags
+}
+
 # ─── REST API Gateway ─────────────────────────────────────────────────────────
 
 module "apigw_rest" {
   source = "../../modules/apigw-rest"
 
-  project_name               = var.project_name
-  environment                = var.environment
-  chat_handler_invoke_arn    = module.chat_handler_lambda.invoke_arn
-  chat_handler_function_name = module.chat_handler_lambda.function_name
-  allowed_origins            = var.allowed_origins
-  throttling_burst_limit     = 100
-  throttling_rate_limit      = 50
-  log_retention_days         = 30
+  project_name                    = var.project_name
+  environment                     = var.environment
+  chat_handler_invoke_arn         = module.chat_handler_lambda.invoke_arn
+  chat_handler_function_name      = module.chat_handler_lambda.function_name
+  document_manager_invoke_arn     = module.document_manager_lambda.invoke_arn
+  document_manager_function_name  = module.document_manager_lambda.function_name
+  allowed_origins                 = var.allowed_origins
+  throttling_burst_limit          = 100
+  throttling_rate_limit           = 50
+  log_retention_days              = 30
 
   tags = local.common_tags
 }

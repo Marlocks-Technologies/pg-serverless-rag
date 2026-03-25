@@ -3,6 +3,11 @@ output "document_processor_role_arn" {
   value       = aws_iam_role.document_processor.arn
 }
 
+output "document_manager_role_arn" {
+  description = "ARN of the IAM role for the document manager Lambda"
+  value       = aws_iam_role.document_manager.arn
+}
+
 output "chat_handler_role_arn" {
   description = "ARN of the IAM role for the chat handler Lambda"
   value       = aws_iam_role.chat_handler.arn

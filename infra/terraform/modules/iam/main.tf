@@ -111,6 +111,89 @@ resource "aws_iam_role_policy" "document_processor" {
   policy = data.aws_iam_policy_document.document_processor_policy.json
 }
 
+# ─── Document Manager Lambda Role ────────────────────────────────────────────
+
+resource "aws_iam_role" "document_manager" {
+  name               = "${var.project_name}-${var.environment}-document-manager-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_trust.json
+
+  tags = merge(var.tags, {
+    Name = "${var.project_name}-${var.environment}-document-manager-role"
+  })
+}
+
+data "aws_iam_policy_document" "document_manager_policy" {
+  # S3 access on all buckets (ingestion, staging, vectors)
+  statement {
+    sid    = "S3BucketAccess"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      var.ingestion_bucket_arn,
+      "${var.ingestion_bucket_arn}/*",
+      var.staging_bucket_arn,
+      "${var.staging_bucket_arn}/*",
+      var.vectors_bucket_arn,
+      "${var.vectors_bucket_arn}/*",
+    ]
+  }
+
+  # DynamoDB for document metadata (optional)
+  statement {
+    sid    = "DynamoDBDocumentMetadata"
+    effect = "Allow"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+    ]
+    resources = [
+      var.chat_history_table_arn,
+      "${var.chat_history_table_arn}/index/*",
+    ]
+  }
+
+  # CloudWatch Logs
+  statement {
+    sid    = "CloudWatchLogs"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      "arn:aws:logs:*:${var.aws_account_id}:log-group:/aws/lambda/${var.project_name}-${var.environment}-document-manager*",
+    ]
+  }
+
+  # KMS (conditional)
+  dynamic "statement" {
+    for_each = local.use_kms ? [1] : []
+    content {
+      sid    = "KMSAccess"
+      effect = "Allow"
+      actions = [
+        "kms:Decrypt",
+        "kms:GenerateDataKey",
+      ]
+      resources = [var.kms_key_arn]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "document_manager" {
+  name   = "${var.project_name}-${var.environment}-document-manager-policy"
+  role   = aws_iam_role.document_manager.id
+  policy = data.aws_iam_policy_document.document_manager_policy.json
+}
+
 # ─── Chat Handler Lambda Role ─────────────────────────────────────────────────
 
 resource "aws_iam_role" "chat_handler" {

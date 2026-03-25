@@ -18,6 +18,16 @@ variable "chat_handler_function_name" {
   type        = string
 }
 
+variable "document_manager_invoke_arn" {
+  description = "Invoke ARN of the document manager Lambda function"
+  type        = string
+}
+
+variable "document_manager_function_name" {
+  description = "Name of the document manager Lambda function"
+  type        = string
+}
+
 variable "allowed_origins" {
   description = "List of allowed CORS origins"
   type        = list(string)

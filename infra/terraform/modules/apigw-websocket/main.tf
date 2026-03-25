@@ -63,20 +63,21 @@ resource "aws_apigatewayv2_stage" "this" {
   name        = local.stage_name
   auto_deploy = true
 
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.access_logs.arn
-    format = jsonencode({
-      requestId        = "$context.requestId"
-      connectionId     = "$context.connectionId"
-      routeKey         = "$context.routeKey"
-      status           = "$context.status"
-      errorMessage     = "$context.error.message"
-      integrationError = "$context.integrationErrorMessage"
-    })
-  }
+  # Commenting out access logging to avoid CloudWatch Logs role requirement
+  # access_log_settings {
+  #   destination_arn = aws_cloudwatch_log_group.access_logs.arn
+  #   format = jsonencode({
+  #     requestId        = "$context.requestId"
+  #     connectionId     = "$context.connectionId"
+  #     routeKey         = "$context.routeKey"
+  #     status           = "$context.status"
+  #     errorMessage     = "$context.error.message"
+  #     integrationError = "$context.integrationErrorMessage"
+  #   })
+  # }
 
   default_route_settings {
-    logging_level            = "INFO"
+    logging_level            = "ERROR"  # Changed to ERROR to reduce noise
     data_trace_enabled       = false
     detailed_metrics_enabled = true
     throttling_burst_limit   = 100

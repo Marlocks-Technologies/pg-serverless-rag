@@ -50,3 +50,9 @@ variable "chat_handler_zip" {
   type        = string
   default     = "../../../../services/chat_handler/function.zip"
 }
+
+variable "document_manager_zip" {
+  description = "Path to the document manager Lambda deployment ZIP"
+  type        = string
+  default     = "../../../../services/document_manager/function.zip"
+}

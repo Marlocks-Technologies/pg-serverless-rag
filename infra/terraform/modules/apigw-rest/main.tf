@@ -272,6 +272,240 @@ resource "aws_api_gateway_integration_response" "chat_history_options_200" {
   }
 }
 
+# ─── /documents Resource ──────────────────────────────────────────────────────
+
+resource "aws_api_gateway_resource" "documents" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_rest_api.this.root_resource_id
+  path_part   = "documents"
+}
+
+# POST /documents (Upload)
+resource "aws_api_gateway_method" "documents_post" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.documents.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "documents_post" {
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.documents.id
+  http_method             = aws_api_gateway_method.documents_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.document_manager_invoke_arn
+}
+
+resource "aws_api_gateway_method_response" "documents_post_202" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents.id
+  http_method = aws_api_gateway_method.documents_post.http_method
+  status_code = "202"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
+# GET /documents (List)
+resource "aws_api_gateway_method" "documents_get" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.documents.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "documents_get" {
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.documents.id
+  http_method             = aws_api_gateway_method.documents_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.document_manager_invoke_arn
+}
+
+resource "aws_api_gateway_method_response" "documents_get_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents.id
+  http_method = aws_api_gateway_method.documents_get.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
+# CORS OPTIONS for /documents
+resource "aws_api_gateway_method" "documents_options" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.documents.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "documents_options" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents.id
+  http_method = aws_api_gateway_method.documents_options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = jsonencode({ statusCode = 200 })
+  }
+}
+
+resource "aws_api_gateway_method_response" "documents_options_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents.id
+  http_method = aws_api_gateway_method.documents_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "documents_options_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents.id
+  http_method = aws_api_gateway_method.documents_options.http_method
+  status_code = aws_api_gateway_method_response.documents_options_200.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,DELETE,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${local.cors_origin}'"
+  }
+}
+
+# ─── /documents/{documentId} Resource ─────────────────────────────────────────
+
+resource "aws_api_gateway_resource" "documents_id" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_resource.documents.id
+  path_part   = "{documentId}"
+}
+
+# GET /documents/{documentId} (Get Details)
+resource "aws_api_gateway_method" "documents_id_get" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.documents_id.id
+  http_method   = "GET"
+  authorization = "NONE"
+
+  request_parameters = {
+    "method.request.path.documentId" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "documents_id_get" {
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.documents_id.id
+  http_method             = aws_api_gateway_method.documents_id_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.document_manager_invoke_arn
+}
+
+resource "aws_api_gateway_method_response" "documents_id_get_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents_id.id
+  http_method = aws_api_gateway_method.documents_id_get.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
+# DELETE /documents/{documentId}
+resource "aws_api_gateway_method" "documents_id_delete" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.documents_id.id
+  http_method   = "DELETE"
+  authorization = "NONE"
+
+  request_parameters = {
+    "method.request.path.documentId" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "documents_id_delete" {
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.documents_id.id
+  http_method             = aws_api_gateway_method.documents_id_delete.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = var.document_manager_invoke_arn
+}
+
+resource "aws_api_gateway_method_response" "documents_id_delete_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents_id.id
+  http_method = aws_api_gateway_method.documents_id_delete.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
+# CORS OPTIONS for /documents/{documentId}
+resource "aws_api_gateway_method" "documents_id_options" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  resource_id   = aws_api_gateway_resource.documents_id.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "documents_id_options" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents_id.id
+  http_method = aws_api_gateway_method.documents_id_options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = jsonencode({ statusCode = 200 })
+  }
+}
+
+resource "aws_api_gateway_method_response" "documents_id_options_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents_id.id
+  http_method = aws_api_gateway_method.documents_id_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "documents_id_options_200" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = aws_api_gateway_resource.documents_id.id
+  http_method = aws_api_gateway_method.documents_id_options.http_method
+  status_code = aws_api_gateway_method_response.documents_id_options_200.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,DELETE,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'${local.cors_origin}'"
+  }
+}
+
 # ─── Deployment & Stage ───────────────────────────────────────────────────────
 
 resource "aws_api_gateway_deployment" "this" {
@@ -288,6 +522,16 @@ resource "aws_api_gateway_deployment" "this" {
       aws_api_gateway_resource.chat_history_session.id,
       aws_api_gateway_method.chat_history_get.id,
       aws_api_gateway_integration.chat_history_get.id,
+      aws_api_gateway_resource.documents.id,
+      aws_api_gateway_method.documents_post.id,
+      aws_api_gateway_integration.documents_post.id,
+      aws_api_gateway_method.documents_get.id,
+      aws_api_gateway_integration.documents_get.id,
+      aws_api_gateway_resource.documents_id.id,
+      aws_api_gateway_method.documents_id_get.id,
+      aws_api_gateway_integration.documents_id_get.id,
+      aws_api_gateway_method.documents_id_delete.id,
+      aws_api_gateway_integration.documents_id_delete.id,
     ]))
   }
 
@@ -301,6 +545,12 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.chat_query_options,
     aws_api_gateway_integration.chat_history_get,
     aws_api_gateway_integration.chat_history_options,
+    aws_api_gateway_integration.documents_post,
+    aws_api_gateway_integration.documents_get,
+    aws_api_gateway_integration.documents_options,
+    aws_api_gateway_integration.documents_id_get,
+    aws_api_gateway_integration.documents_id_delete,
+    aws_api_gateway_integration.documents_id_options,
   ]
 }
 
