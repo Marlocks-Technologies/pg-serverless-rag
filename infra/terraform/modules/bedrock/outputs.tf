@@ -20,10 +20,10 @@ output "data_source_arn" {
 
 output "ssm_kb_id_parameter" {
   description = "SSM parameter name storing the Knowledge Base ID"
-  value       = aws_ssm_parameter.knowledge_base_id.name
+  value       = data.aws_ssm_parameter.knowledge_base_id.name
 }
 
 output "ssm_ds_id_parameter" {
   description = "SSM parameter name storing the Data Source ID"
-  value       = aws_ssm_parameter.data_source_id.name
+  value       = data.aws_ssm_parameter.data_source_id.name
 }
