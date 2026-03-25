@@ -42,11 +42,11 @@ variable "allowed_origins" {
 variable "document_processor_zip" {
   description = "Path to the document processor Lambda deployment ZIP"
   type        = string
-  default     = "../../../../services/document_processor/dist/document_processor.zip"
+  default     = "../../../../services/document_processor/function.zip"
 }
 
 variable "chat_handler_zip" {
   description = "Path to the chat handler Lambda deployment ZIP"
   type        = string
-  default     = "../../../../services/chat_handler/dist/chat_handler.zip"
+  default     = "../../../../services/chat_handler/function.zip"
 }

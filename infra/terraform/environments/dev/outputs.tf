@@ -41,4 +41,5 @@ output "chat_handler_function_name" {
 output "knowledge_base_id" {
   description = "Bedrock Knowledge Base ID (set by provision_bedrock_kb.sh)"
   value       = module.bedrock.knowledge_base_id
+  sensitive   = true
 }
