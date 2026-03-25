@@ -58,7 +58,7 @@ def generate_pdf(
     styles = _get_styles()
 
     # Title
-    story.append(Paragraph(title, styles["Title"]))
+    story.append(Paragraph(title, styles["DocTitle"]))
     story.append(Spacer(1, 0.3 * inch))
 
     # Metadata section
@@ -103,9 +103,9 @@ def _get_styles():
     """Create and return custom paragraph styles for the PDF."""
     styles = getSampleStyleSheet()
 
-    # Title style
+    # Custom title style (using unique name to avoid conflicts)
     styles.add(ParagraphStyle(
-        name="Title",
+        name="DocTitle",
         parent=styles["Heading1"],
         fontSize=18,
         textColor="#1a1a1a",

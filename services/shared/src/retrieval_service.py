@@ -5,7 +5,7 @@ Handles vector search, ranking, filtering, and citation generation.
 """
 
 from typing import Dict, List, Optional, Any
-from s3_vectors import S3VectorStore
+from shared.s3_vectors import S3VectorStore
 
 
 class RetrievalResult:

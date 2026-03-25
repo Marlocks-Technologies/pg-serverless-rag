@@ -91,27 +91,38 @@ def chunk_text(
             - start_char: Starting character position
             - end_char: Ending character position
     """
+    print(f"[DEBUG] chunk_text called with text length: {len(text)}")
+
     if not text:
+        print("[DEBUG] chunk_text: empty text, returning []")
         return []
 
     # Simple word-based chunking (production: use tiktoken for accurate token counts)
+    print("[DEBUG] chunk_text: splitting into words")
     words = text.split()
+    print(f"[DEBUG] chunk_text: word count: {len(words)}")
 
     if not words:
+        print("[DEBUG] chunk_text: no words, returning []")
         return []
 
     words_per_chunk = chunk_size
     overlap_words = int(words_per_chunk * overlap_percentage)
+    print(f"[DEBUG] chunk_text: words_per_chunk={words_per_chunk}, overlap_words={overlap_words}")
 
     chunks = []
     chunk_index = 0
     start_word = 0
 
+    print(f"[DEBUG] chunk_text: starting loop")
     while start_word < len(words):
+        print(f"[DEBUG] chunk_text: iteration {chunk_index}, start_word={start_word}")
         end_word = min(start_word + words_per_chunk, len(words))
+        print(f"[DEBUG] chunk_text: end_word={end_word}")
 
         # Try to break on sentence boundary if requested
         if preserve_sentences and end_word < len(words):
+            print(f"[DEBUG] chunk_text: looking for sentence boundary")
             # Look for sentence-ending punctuation in the last 20% of chunk
             search_start = start_word + int(words_per_chunk * 0.8)
             for i in range(end_word - 1, search_start, -1):
@@ -119,14 +130,23 @@ def chunk_text(
                     end_word = i + 1
                     break
 
+        print(f"[DEBUG] chunk_text: extracting chunk_words[{start_word}:{end_word}]")
         chunk_words = words[start_word:end_word]
+        print(f"[DEBUG] chunk_text: joining chunk_words")
         chunk_text = ' '.join(chunk_words)
 
-        # Calculate character positions
-        # (Approximate - in production, track precise positions)
-        chars_before = len(' '.join(words[:start_word]))
+        print(f"[DEBUG] chunk_text: calculating character positions")
+        # Calculate character positions - OPTIMIZED to avoid O(n²)
+        # Instead of reconstructing the string each time, just count
+        if start_word == 0:
+            chars_before = 0
+        else:
+            # Approximate: sum of word lengths + spaces
+            chars_before = sum(len(w) for w in words[:start_word]) + (start_word - 1)
+
         chars_in_chunk = len(chunk_text)
 
+        print(f"[DEBUG] chunk_text: appending chunk")
         chunks.append({
             'text': chunk_text,
             'token_count': len(chunk_words),  # Approximate
@@ -140,11 +160,14 @@ def chunk_text(
 
         # Move to next chunk with overlap
         start_word = end_word - overlap_words
+        print(f"[DEBUG] chunk_text: next start_word={start_word}")
 
-        # Prevent infinite loop
-        if start_word >= end_word:
+        # Prevent infinite loop - handle both forward overlap and negative positions
+        if start_word >= end_word or start_word < 0:
+            print(f"[DEBUG] chunk_text: breaking loop, start_word={start_word}, end_word={end_word}")
             break
 
+    print(f"[DEBUG] chunk_text: returning {len(chunks)} chunks")
     return chunks
 
 

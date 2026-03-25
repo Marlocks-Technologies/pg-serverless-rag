@@ -5,9 +5,9 @@ Combines query processing, vector retrieval, context assembly, and answer genera
 """
 
 from typing import Dict, List, Optional, Any, Iterator
-from query_processor import QueryProcessor
-from retrieval_service import RetrievalService, RetrievalResult
-from bedrock_wrappers import invoke_model, invoke_model_streaming
+from shared.query_processor import QueryProcessor
+from shared.retrieval_service import RetrievalService, RetrievalResult
+from shared.bedrock_wrappers import invoke_model, invoke_model_streaming
 
 
 class RAGEngine:

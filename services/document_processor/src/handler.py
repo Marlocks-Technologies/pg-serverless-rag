@@ -168,7 +168,7 @@ class DocumentProcessor:
                     'source-filename': sanitize_filename(filename),
                     'category': classification['primary_tag']
                 },
-                s3_client=self.s3
+                client=self.s3
             )
 
             # Step 9: Create and upload metadata
@@ -194,7 +194,7 @@ class DocumentProcessor:
                 json.dumps(metadata, indent=2).encode('utf-8'),
                 content_type='application/json',
                 metadata={},
-                s3_client=self.s3
+                client=self.s3
             )
 
             # Step 10: Chunk text for embeddings
@@ -209,32 +209,65 @@ class DocumentProcessor:
             log.info("chunks_created", chunk_count=len(chunks))
 
             # Step 11: Generate embeddings and store in S3 Vectors
-            log.info("generating_embeddings", chunk_count=len(chunks))
+            log.info("generating_embeddings_start", chunk_count=len(chunks))
 
-            for chunk in chunks:
+            # Create bedrock client with explicit region
+            log.info("creating_bedrock_client", region=self.region)
+            try:
+                bedrock_runtime = boto3.client('bedrock-runtime', region_name=self.region)
+                log.info("bedrock_client_created")
+            except Exception as e:
+                log.error("bedrock_client_failed", error=str(e), error_type=type(e).__name__)
+                raise
+
+            for i, chunk in enumerate(chunks):
+                log.info("processing_chunk", chunk_index=i, chunk_size=len(chunk['text']))
+
                 # Generate embedding
-                embedding = generate_embeddings(
-                    text=chunk['text'],
-                    model_id=self.embedding_model_id
-                )
+                try:
+                    log.info("calling_generate_embeddings", chunk_index=i, model=self.embedding_model_id)
+                    embedding = generate_embeddings(
+                        text=chunk['text'],
+                        model_id=self.embedding_model_id,
+                        client=bedrock_runtime
+                    )
+                    log.info("embedding_generated", chunk_index=i, dimension=len(embedding))
+                except Exception as e:
+                    log.error("embedding_generation_failed",
+                        chunk_index=i,
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        traceback=str(e.__traceback__)
+                    )
+                    raise
 
                 # Store in S3 Vectors
                 vector_id = f"{document_id}-chunk-{chunk['chunk_index']}"
 
-                self.vector_store.store_vector(
-                    vector_id=vector_id,
-                    embedding=embedding,
-                    text=chunk['text'],
-                    metadata={
-                        'documentId': document_id,
-                        'filename': filename,
-                        'category': classification['primary_tag'],
-                        'chunkIndex': chunk['chunk_index'],
-                        'sourceUri': f"s3://{self.staging_bucket}/{pdf_key}",
-                        'timestamp': datetime.utcnow().isoformat() + 'Z',
-                        'tokenCount': chunk['token_count']
-                    }
-                )
+                try:
+                    log.info("storing_vector", vector_id=vector_id, chunk_index=i)
+                    self.vector_store.store_vector(
+                        vector_id=vector_id,
+                        embedding=embedding,
+                        text=chunk['text'],
+                        metadata={
+                            'documentId': document_id,
+                            'filename': filename,
+                            'category': classification['primary_tag'],
+                            'chunkIndex': chunk['chunk_index'],
+                            'sourceUri': f"s3://{self.staging_bucket}/{pdf_key}",
+                            'timestamp': datetime.utcnow().isoformat() + 'Z',
+                            'tokenCount': chunk['token_count']
+                        }
+                    )
+                    log.info("vector_stored", vector_id=vector_id, chunk_index=i)
+                except Exception as e:
+                    log.error("vector_storage_failed",
+                        chunk_index=i,
+                        error=str(e),
+                        error_type=type(e).__name__
+                    )
+                    raise
 
             log.info("vectors_stored", vector_count=len(chunks))
 
@@ -334,7 +367,7 @@ class DocumentProcessor:
                 json.dumps(error_manifest, indent=2).encode('utf-8'),
                 content_type='application/json',
                 metadata={},
-                s3_client=self.s3
+                client=self.s3
             )
         except Exception as e:
             logger.error("failed_to_write_error_manifest", error=str(e))

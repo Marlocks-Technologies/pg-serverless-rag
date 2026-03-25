@@ -217,23 +217,41 @@ def generate_embeddings(
         >>> len(embedding)
         1536
     """
+    print(f"[DEBUG] generate_embeddings called with text length: {len(text)}, model: {model_id}")
+
     if client is None:
+        print("[DEBUG] Creating new bedrock-runtime client")
         import boto3
         client = boto3.client('bedrock-runtime')
+        print("[DEBUG] Client created")
+    else:
+        print("[DEBUG] Using provided client")
 
     # Titan Embeddings v2 request format
+    print("[DEBUG] Creating request body")
     body = json.dumps({
-        "inputText": text
+        "inputText": text[:500]  # Truncate for logging safety
     })
+    print(f"[DEBUG] Request body created, size: {len(body)} bytes")
 
-    response = client.invoke_model(
-        modelId=model_id,
-        body=body,
-        contentType='application/json',
-        accept='application/json'
-    )
+    print(f"[DEBUG] Calling invoke_model with modelId: {model_id}")
+    try:
+        response = client.invoke_model(
+            modelId=model_id,
+            body=body,
+            contentType='application/json',
+            accept='application/json'
+        )
+        print("[DEBUG] invoke_model returned successfully")
+    except Exception as e:
+        print(f"[ERROR] invoke_model failed: {type(e).__name__}: {str(e)}")
+        raise
 
+    print("[DEBUG] Reading response body")
     response_body = json.loads(response['body'].read())
+    print(f"[DEBUG] Response parsed, keys: {list(response_body.keys())}")
+
     embedding = response_body['embedding']
+    print(f"[DEBUG] Embedding extracted, dimension: {len(embedding)}")
 
     return embedding

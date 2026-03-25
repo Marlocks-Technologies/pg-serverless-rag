@@ -6,7 +6,7 @@ Handles query normalization, embedding generation, and query optimization.
 
 import re
 from typing import Dict, List, Optional, Any
-from bedrock_wrappers import generate_embeddings
+from shared.bedrock_wrappers import generate_embeddings
 
 
 class QueryProcessor:

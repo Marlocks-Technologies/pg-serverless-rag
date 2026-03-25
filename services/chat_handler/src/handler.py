@@ -18,17 +18,17 @@ from typing import Dict, Any, Optional
 sys.path.insert(0, '/opt/python')
 
 import boto3
-from rag_engine import RAGEngine
-from conversation_history import ConversationHistory
-from streaming_handler import StreamingHandler
-from websocket_handler import (
+from shared.rag_engine import RAGEngine
+from shared.conversation_history import ConversationHistory
+from shared.streaming_handler import StreamingHandler
+from shared.websocket_handler import (
     WebSocketRouter,
     WebSocketConnection,
     WebSocketMessage,
     create_response,
     create_error_response
 )
-from logger import get_logger
+from shared.logger import get_logger
 
 logger = get_logger(__name__)
 

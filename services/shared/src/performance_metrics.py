@@ -8,7 +8,7 @@ import time
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone
 import boto3
-from logger import get_logger
+from shared.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -5,7 +5,7 @@ Phase 5: Compresses old conversation turns to reduce token usage while maintaini
 """
 
 from typing import List, Dict, Any
-from bedrock_wrappers import invoke_model
+from shared.bedrock_wrappers import invoke_model
 import boto3
 
 
