@@ -47,6 +47,30 @@ class BedrockKBProvisioner:
         self.index_name = f"{args.project_name}-{args.environment}-vectors-index"
         self.ssm_prefix = f"/{args.project_name}/{args.environment}/bedrock"
 
+    def create_vector_bucket(self):
+        """Create S3 Vector bucket if it doesn't exist."""
+        print(f"→ Creating S3 Vector bucket...")
+        print(f"  Bucket: {self.args.vectors_bucket}")
+
+        try:
+            # Check if vector bucket already exists
+            self.s3vectors.get_vector_bucket(
+                vectorBucketName=self.args.vectors_bucket
+            )
+            print(f"✓ S3 Vector bucket already exists: {self.args.vectors_bucket}")
+            return
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+            if error_code not in ['NoSuchBucket', 'NotFoundException', 'ResourceNotFoundException']:
+                raise
+            # Bucket doesn't exist, we'll create it below
+
+        # Create the vector bucket
+        self.s3vectors.create_vector_bucket(
+            vectorBucketName=self.args.vectors_bucket
+        )
+        print(f"✓ S3 Vector bucket created: {self.args.vectors_bucket}")
+
     def create_s3_vectors_index(self):
         """Create S3 Vectors index if it doesn't exist."""
         print(f"→ Creating S3 Vectors index...")
@@ -292,7 +316,10 @@ class BedrockKBProvisioner:
             print("→ Skipping provisioning (KB already configured)")
             return
 
-        # Create S3 Vectors index first
+        # Create S3 Vector bucket first (if not already created)
+        self.create_vector_bucket()
+
+        # Create S3 Vectors index
         self.create_s3_vectors_index()
 
         # Create Knowledge Base with S3 Vectors
