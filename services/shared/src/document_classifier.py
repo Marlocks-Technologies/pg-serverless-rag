@@ -19,7 +19,7 @@ class DocumentClassifier:
 
     def __init__(
         self,
-        model_id: str = "anthropic.claude-3-haiku-20240307-v1:0",
+        model_id: str = "anthropic.claude-3-5-haiku-20241022-v1:0",
         region: str = 'us-east-1',
         system_prompt_path: str = None
     ):
@@ -149,6 +149,11 @@ Base classification ONLY on the provided text. Do not hallucinate details."""
                     import time
                     time.sleep(2 ** attempt)  # Exponential backoff
                     continue
+
+                # Log ResourceNotFoundException (legacy model) but don't crash
+                if error_code == 'ResourceNotFoundException':
+                    print(f"Model {self.model_id} not available: {e}")
+                    raise RuntimeError(f"Model not available: {self.model_id}")
 
                 raise RuntimeError(f"Bedrock error ({error_code}): {e}")
 

@@ -158,12 +158,17 @@ def chunk_text(
 
         chunk_index += 1
 
+        # If we've reached the end of the document, stop
+        if end_word >= len(words):
+            print(f"[DEBUG] chunk_text: reached end of document, breaking")
+            break
+
         # Move to next chunk with overlap
         start_word = end_word - overlap_words
         print(f"[DEBUG] chunk_text: next start_word={start_word}")
 
-        # Prevent infinite loop - handle both forward overlap and negative positions
-        if start_word >= end_word or start_word < 0:
+        # Prevent infinite loop - if overlap is too large and we're not making progress
+        if start_word <= 0 or start_word >= end_word:
             print(f"[DEBUG] chunk_text: breaking loop, start_word={start_word}, end_word={end_word}")
             break
 
