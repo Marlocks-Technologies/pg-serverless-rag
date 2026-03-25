@@ -38,7 +38,7 @@ phases:
       - echo "Validating Terraform configuration"
       - terraform validate
       - echo "Planning Terraform changes"
-      - terraform plan -out=tfplan -var="aws_account_id=544238486852"
+      - terraform plan -out=tfplan -var="aws_account_id=544238486852" -var="aws_region=eu-west-1"
       - echo "Applying Terraform changes"
       - terraform apply -auto-approve tfplan
       - echo "Capturing Terraform outputs"
