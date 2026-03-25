@@ -252,19 +252,41 @@ data "aws_iam_policy_document" "chat_handler_policy" {
       "bedrock-agent-runtime:RetrieveAndGenerate",
     ]
     resources = [
-      "arn:aws:bedrock:${local.bedrock_region}::foundation-model/*",
+      # Allow cross-region model resolution used by system inference profiles
+      # (e.g. eu.* profiles may invoke underlying foundation models in another region).
+      "arn:aws:bedrock:*::foundation-model/*",
+      "arn:aws:bedrock:*::inference-profile/*",
+      "arn:aws:bedrock:*:${var.aws_account_id}:inference-profile/*",
+      "arn:aws:bedrock:*:${var.aws_account_id}:application-inference-profile/*",
       local.kb_arn,
     ]
   }
 
-  # S3 read from staging bucket
+  # Required for first-time access to Marketplace-backed Bedrock foundation models
   statement {
-    sid    = "S3StagingRead"
+    sid    = "MarketplaceModelSubscription"
+    effect = "Allow"
+    actions = [
+      "aws-marketplace:ViewSubscriptions",
+      "aws-marketplace:Subscribe",
+    ]
+    resources = ["*"]
+  }
+
+  # S3 read from staging and vectors buckets
+  statement {
+    sid    = "S3BucketRead"
     effect = "Allow"
     actions = [
       "s3:GetObject",
+      "s3:ListBucket",
     ]
-    resources = ["${var.staging_bucket_arn}/*"]
+    resources = [
+      var.staging_bucket_arn,
+      "${var.staging_bucket_arn}/*",
+      var.vectors_bucket_arn,
+      "${var.vectors_bucket_arn}/*",
+    ]
   }
 
   # CloudWatch Logs

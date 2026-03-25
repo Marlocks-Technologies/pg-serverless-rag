@@ -95,6 +95,7 @@ def retrieve_and_generate(
     client: Any,
     knowledge_base_id: str,
     query: str,
+    model_arn: str,
     session_id: Optional[str] = None,
     top_k: int = 5,
     filters: Optional[dict] = None,
@@ -105,6 +106,7 @@ def retrieve_and_generate(
         client: boto3 bedrock-agent-runtime client.
         knowledge_base_id: Bedrock Knowledge Base ID.
         query: Natural language query to answer.
+        model_arn: Full ARN of the Bedrock model or inference profile to use.
         session_id: Optional session ID for multi-turn conversation continuity.
         top_k: Number of chunks to retrieve from the knowledge base.
         filters: Optional metadata filter dict (passed as retrievalFilter).
@@ -127,7 +129,7 @@ def retrieve_and_generate(
             "type": "KNOWLEDGE_BASE",
             "knowledgeBaseConfiguration": {
                 "knowledgeBaseId": knowledge_base_id,
-                "modelArn": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "modelArn": model_arn,
                 "retrievalConfiguration": retrieval_config,
             },
         },
