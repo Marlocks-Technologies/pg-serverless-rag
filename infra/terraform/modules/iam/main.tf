@@ -62,14 +62,18 @@ data "aws_iam_policy_document" "document_processor_policy" {
     resources = ["*"]
   }
 
-  # Bedrock - invoke Haiku model for classification
+  # Bedrock - invoke models for classification and embeddings
   statement {
-    sid    = "BedrockInvokeHaiku"
+    sid    = "BedrockInvokeModels"
     effect = "Allow"
     actions = [
       "bedrock:InvokeModel",
     ]
-    resources = [local.haiku_model_arn]
+    resources = [
+      local.haiku_model_arn,
+      "arn:aws:bedrock:${local.bedrock_region}::foundation-model/amazon.titan-embed-text-v2:0",
+      "arn:aws:bedrock:${local.bedrock_region}::foundation-model/${var.generation_model_id}",
+    ]
   }
 
   # CloudWatch Logs

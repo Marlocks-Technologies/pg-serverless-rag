@@ -15,9 +15,9 @@ mkdir -p python/lib/python3.12/site-packages
 echo "Installing dependencies..."
 pip install -r requirements.txt -t python/lib/python3.12/site-packages --platform manylinux2014_x86_64 --only-binary=:all: --python-version 3.12
 
-# Copy source files
+# Copy source files as 'shared' package
 echo "Copying source files..."
-cp -r src/* python/lib/python3.12/site-packages/
+cp -r src python/lib/python3.12/site-packages/shared
 
 # Create zip file
 echo "Creating layer zip..."
