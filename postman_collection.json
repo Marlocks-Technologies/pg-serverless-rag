@@ -1,14 +1,19 @@
 {
   "info": {
     "name": "RAG Platform API",
-    "description": "Complete API collection for the RAG (Retrieval Augmented Generation) Platform.\n\nFeatures:\n- Document-based Q&A with AI\n- Semantic search\n- Conversation history\n- Multi-turn context",
+    "description": "Complete API collection for the RAG (Retrieval Augmented Generation) Platform.\n\nFeatures:\n- Document-based Q&A with Amazon Nova Lite\n- Semantic search with Amazon Bedrock\n- Document upload and management\n- Real-time WebSocket streaming\n- Conversation history\n- Multi-turn context\n\nModels:\n- Generation: Amazon Nova Lite (eu.amazon.nova-lite-v1:0)\n- Embeddings: Amazon Titan v2\n- Classification: Claude 3 Haiku",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "variable": [
     {
       "key": "base_url",
-      "value": "https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev",
+      "value": "https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev",
+      "type": "string"
+    },
+    {
+      "key": "websocket_url",
+      "value": "wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev",
       "type": "string"
     },
     {
@@ -153,6 +158,84 @@
           "path": ["chat", "session", "{{session_id}}"]
         },
         "description": "Delete all conversation history for a session.\n\n**Response:**\n- Success status\n- Number of messages deleted\n\n**Note:** This is permanent and cannot be undone."
+      },
+      "response": []
+    },
+    {
+      "name": "8. Upload Document",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"filename\": \"test-document.txt\",\n  \"content\": \"This is a test document for the RAG platform.\",\n  \"metadata\": {\n    \"category\": \"testing\",\n    \"author\": \"Postman User\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/documents",
+          "host": ["{{base_url}}"],
+          "path": ["documents"]
+        },
+        "description": "Upload a new document to the RAG platform.\n\n**Request:**\n- filename: Name of the file (required)\n- content: Document text content (required)\n- metadata: Additional metadata (optional)\n\n**Response:**\n- documentId: Unique identifier\n- uploadUrl: S3 presigned URL for direct upload\n- status: Processing status"
+      },
+      "response": []
+    },
+    {
+      "name": "9. List Documents",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/documents",
+          "host": ["{{base_url}}"],
+          "path": ["documents"]
+        },
+        "description": "Get a list of all documents in the system.\n\n**Response:**\n- Array of document objects\n- Each with: documentId, filename, category, uploadTime, size"
+      },
+      "response": []
+    },
+    {
+      "name": "10. Get Document Details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/documents/:documentId",
+          "host": ["{{base_url}}"],
+          "path": ["documents", ":documentId"],
+          "variable": [
+            {
+              "key": "documentId",
+              "value": "your-document-id-here"
+            }
+          ]
+        },
+        "description": "Get detailed information about a specific document.\n\n**Response:**\n- Full document metadata\n- Processing status\n- Chunk count\n- Storage locations"
+      },
+      "response": []
+    },
+    {
+      "name": "11. Delete Document",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/documents/:documentId",
+          "host": ["{{base_url}}"],
+          "path": ["documents", ":documentId"],
+          "variable": [
+            {
+              "key": "documentId",
+              "value": "your-document-id-here"
+            }
+          ]
+        },
+        "description": "Delete a document from the system.\n\n**Response:**\n- Success status\n- Deleted document ID\n\n**Note:** This removes the document, its chunks, and embeddings."
       },
       "response": []
     },
