@@ -105,7 +105,6 @@ module "document_processor_lambda" {
 
   environment_variables = {
     AWS_ACCOUNT_ID      = var.aws_account_id
-    AWS_REGION          = var.aws_region
     INGESTION_BUCKET    = "${var.project_name}-${var.environment}-doc-ingestion"
     STAGING_BUCKET      = "${var.project_name}-${var.environment}-doc-staging"
     VECTORS_BUCKET      = "${var.project_name}-${var.environment}-kb-vectors"
@@ -141,7 +140,6 @@ module "chat_handler_lambda" {
 
   environment_variables = {
     AWS_ACCOUNT_ID      = var.aws_account_id
-    AWS_REGION          = var.aws_region
     INGESTION_BUCKET    = "${var.project_name}-${var.environment}-doc-ingestion"
     STAGING_BUCKET      = "${var.project_name}-${var.environment}-doc-staging"
     VECTORS_BUCKET      = "${var.project_name}-${var.environment}-kb-vectors"

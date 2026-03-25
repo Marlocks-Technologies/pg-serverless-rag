@@ -96,17 +96,9 @@ class BedrockKBProvisioner:
                     }
                 },
                 storageConfiguration={
-                    'type': 'S3',
-                    's3Configuration': {
-                        'bucketArn': f"arn:aws:s3:::{self.args.vectors_bucket}",
-                        'vectorIndexConfiguration': {
-                            'vectorIndexName': f"{self.args.project_name}-{self.args.environment}-vectors"
-                        },
-                        'fieldMapping': {
-                            'vectorField': 'embedding',
-                            'textField': 'text',
-                            'metadataField': 'metadata'
-                        }
+                    'type': 'S3_VECTORS',
+                    's3VectorsConfiguration': {
+                        'bucketArn': f"arn:aws:s3:::{self.args.vectors_bucket}"
                     }
                 }
             )
