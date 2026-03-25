@@ -69,6 +69,27 @@ module "dynamodb" {
   tags = local.common_tags
 }
 
+# WebSocket Connections Table
+resource "aws_dynamodb_table" "ws_connections" {
+  name         = "${var.project_name}-${var.environment}-ws-connections"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "connectionId"
+
+  attribute {
+    name = "connectionId"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-${var.environment}-ws-connections"
+  })
+}
+
 # ─── IAM Roles & Policies ─────────────────────────────────────────────────────
 
 module "iam" {
@@ -205,6 +226,38 @@ module "document_manager_lambda" {
   tags               = local.common_tags
 }
 
+# ─── WebSocket Handler Lambda ─────────────────────────────────────────────────
+
+module "websocket_handler_lambda" {
+  source = "../../modules/lambda"
+
+  function_name    = "${var.project_name}-${var.environment}-websocket-handler"
+  handler          = "handler.handler"
+  runtime          = "python3.12"
+  filename         = var.websocket_handler_zip
+  source_code_hash = filebase64sha256(var.websocket_handler_zip)
+  role_arn         = module.iam.chat_handler_role_arn  # Reuse chat handler role
+  memory_size      = 512
+  timeout          = 30
+  layers           = [aws_lambda_layer_version.shared.arn]
+
+  environment_variables = {
+    AWS_ACCOUNT_ID      = var.aws_account_id
+    CONNECTIONS_TABLE   = "${var.project_name}-${var.environment}-ws-connections"
+    CHAT_HISTORY_TABLE  = "${var.project_name}-${var.environment}-chat-history"
+    KNOWLEDGE_BASE_ID   = module.bedrock.knowledge_base_id
+    GENERATION_MODEL_ID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    LOG_LEVEL           = "INFO"
+    ENVIRONMENT         = var.environment
+  }
+
+  allow_apigateway_invocation = true
+  apigateway_source_arn       = "${module.apigw_websocket.execution_arn}/*"
+
+  log_retention_days = 30
+  tags               = local.common_tags
+}
+
 # ─── REST API Gateway ─────────────────────────────────────────────────────────
 
 module "apigw_rest" {
@@ -231,8 +284,8 @@ module "apigw_websocket" {
 
   project_name               = var.project_name
   environment                = var.environment
-  chat_handler_invoke_arn    = module.chat_handler_lambda.invoke_arn
-  chat_handler_function_name = module.chat_handler_lambda.function_name
+  chat_handler_invoke_arn    = module.websocket_handler_lambda.invoke_arn
+  chat_handler_function_name = module.websocket_handler_lambda.function_name
   log_retention_days         = 30
 
   tags = local.common_tags

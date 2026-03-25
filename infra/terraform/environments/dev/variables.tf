@@ -56,3 +56,9 @@ variable "document_manager_zip" {
   type        = string
   default     = "../../../../services/document_manager/function.zip"
 }
+
+variable "websocket_handler_zip" {
+  description = "Path to the WebSocket handler Lambda deployment ZIP"
+  type        = string
+  default     = "../../../../services/websocket_handler/function.zip"
+}

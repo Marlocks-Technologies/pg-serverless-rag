@@ -214,10 +214,27 @@ data "aws_iam_policy_document" "chat_handler_policy" {
       "dynamodb:GetItem",
       "dynamodb:PutItem",
       "dynamodb:Query",
+      "dynamodb:DeleteItem",
     ]
     resources = [
       var.chat_history_table_arn,
       "${var.chat_history_table_arn}/index/*",
+    ]
+  }
+
+  # DynamoDB for WebSocket connections
+  statement {
+    sid    = "DynamoDBWebSocketConnections"
+    effect = "Allow"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+    ]
+    resources = [
+      "arn:aws:dynamodb:*:${var.aws_account_id}:table/${var.project_name}-${var.environment}-ws-connections",
     ]
   }
 
@@ -230,6 +247,8 @@ data "aws_iam_policy_document" "chat_handler_policy" {
       "bedrock:Retrieve",
       "bedrock:RetrieveAndGenerate",
       "bedrock:InvokeModelWithResponseStream",
+      "bedrock-agent-runtime:Retrieve",
+      "bedrock-agent-runtime:RetrieveAndGenerate",
     ]
     resources = [
       "arn:aws:bedrock:${local.bedrock_region}::foundation-model/*",
@@ -258,6 +277,7 @@ data "aws_iam_policy_document" "chat_handler_policy" {
     ]
     resources = [
       "arn:aws:logs:*:${var.aws_account_id}:log-group:/aws/lambda/${var.project_name}-${var.environment}-chat-handler*",
+      "arn:aws:logs:*:${var.aws_account_id}:log-group:/aws/lambda/${var.project_name}-${var.environment}-websocket-handler*",
     ]
   }
 
@@ -267,6 +287,7 @@ data "aws_iam_policy_document" "chat_handler_policy" {
     effect = "Allow"
     actions = [
       "execute-api:ManageConnections",
+      "execute-api:Invoke",
     ]
     resources = [var.websocket_api_arn]
   }
