@@ -13,7 +13,7 @@ The Document Management API allows you to:
 - ✅ Delete documents and their associated vectors
 - ✅ Track processing status in real-time
 
-**Base URL:** `https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev`
+**Base URL:** `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev`
 
 ---
 
@@ -134,7 +134,7 @@ FILE_PATH="document.pdf"
 FILE_BASE64=$(base64 -i "$FILE_PATH")
 
 # Upload
-curl -X POST https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents \
+curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents \
   -H "Content-Type: application/json" \
   -d "{
     \"filename\": \"document.pdf\",
@@ -157,7 +157,7 @@ async function uploadDocument(file) {
   reader.onload = async () => {
     const base64 = reader.result.split(',')[1];  // Remove data URL prefix
 
-    const response = await fetch('https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents', {
+    const response = await fetch('https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -246,13 +246,13 @@ GET /documents?limit=50&status=completed&category=technical
 
 ```bash
 # List all documents
-curl https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents
+curl https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents
 
 # Filter by category
-curl "https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents?category=technical"
+curl "https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents?category=technical"
 
 # Filter by status
-curl "https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents?status=completed&limit=10"
+curl "https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents?status=completed&limit=10"
 ```
 
 ### Example Request (JavaScript)
@@ -262,7 +262,7 @@ async function listDocuments(filters = {}) {
   const params = new URLSearchParams(filters);
 
   const response = await fetch(
-    `https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents?${params}`
+    `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents?${params}`
   );
 
   const data = await response.json();
@@ -336,7 +336,7 @@ GET /documents/{documentId}
 ### Example Request (cURL)
 
 ```bash
-curl https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents/abc123-def456-ghi789
+curl https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents/abc123-def456-ghi789
 ```
 
 ### Example Request (JavaScript)
@@ -344,7 +344,7 @@ curl https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents/abc123
 ```javascript
 async function getDocumentDetails(documentId) {
   const response = await fetch(
-    `https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents/${documentId}`
+    `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents/${documentId}`
   );
 
   if (!response.ok) {
@@ -402,7 +402,7 @@ DELETE /documents/{documentId}
 ### Example Request (cURL)
 
 ```bash
-curl -X DELETE https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents/abc123-def456-ghi789
+curl -X DELETE https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents/abc123-def456-ghi789
 ```
 
 ### Example Request (JavaScript)
@@ -414,7 +414,7 @@ async function deleteDocument(documentId) {
   if (!confirmed) return;
 
   const response = await fetch(
-    `https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents/${documentId}`,
+    `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents/${documentId}`,
     { method: 'DELETE' }
   );
 
@@ -463,7 +463,7 @@ function DocumentUploader() {
 
       // Upload to API
       const response = await fetch(
-        'https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents',
+        'https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -541,7 +541,7 @@ function DocumentList() {
     try {
       const params = filter !== 'all' ? `?category=${filter}` : '';
       const response = await fetch(
-        `https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents${params}`
+        `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents${params}`
       );
       const data = await response.json();
       setDocuments(data.documents);
@@ -557,7 +557,7 @@ function DocumentList() {
 
     try {
       await fetch(
-        `https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/documents/${documentId}`,
+        `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents/${documentId}`,
         { method: 'DELETE' }
       );
       await loadDocuments();  // Reload list

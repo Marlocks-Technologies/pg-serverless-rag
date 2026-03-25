@@ -1,7 +1,8 @@
 # RAG Platform API Documentation
 
-**Version:** 1.0.0
-**Base URL:** `https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev`
+**Version:** 2.0.0
+**Base URL:** `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev`
+**WebSocket URL:** `wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev`
 **Environment:** Development
 **Region:** eu-west-1
 
@@ -39,7 +40,8 @@ The RAG (Retrieval Augmented Generation) Platform API provides endpoints for:
 
 ### Technology Stack
 - **Embeddings:** Amazon Titan Embeddings v2 (1024 dimensions)
-- **LLM:** Claude Sonnet 4.6
+- **LLM:** Amazon Nova Lite (eu.amazon.nova-lite-v1:0)
+- **Classification:** Claude 3 Haiku (anthropic.claude-3-haiku-20240307-v1:0)
 - **Vector Storage:** Amazon S3 Vectors
 - **Chat History:** DynamoDB
 
@@ -71,7 +73,7 @@ Check if the API service is running and healthy.
 
 **Request:**
 ```bash
-curl -X GET https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/health
+curl -X GET https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/health
 ```
 
 **Response:** `200 OK`
@@ -126,7 +128,7 @@ Ask a question and get an AI-generated answer based on your documents.
 
 **Example Request:**
 ```bash
-curl -X POST https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
+curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
   -H "Content-Type: application/json" \
   -d '{
     "question": "What is Amazon Bedrock?",
@@ -219,7 +221,7 @@ Search for relevant documents without generating an answer.
 
 **Example Request:**
 ```bash
-curl -X POST https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/chat/search \
+curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/search \
   -H "Content-Type: application/json" \
   -d '{
     "query": "deployment best practices",
@@ -265,7 +267,7 @@ Retrieve conversation history for a specific session.
 
 **Example Request:**
 ```bash
-curl -X GET https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/chat/history/demo-session-001
+curl -X GET https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/history/demo-session-001
 ```
 
 **Response:** `200 OK`
@@ -332,7 +334,7 @@ Delete all conversation history for a session.
 
 **Example Request:**
 ```bash
-curl -X DELETE https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/chat/session/demo-session-001
+curl -X DELETE https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/session/demo-session-001
 ```
 
 **Response:** `200 OK`
@@ -440,7 +442,7 @@ interface Filters {
 
 ### Prerequisites
 1. **Postman** (recommended) or any HTTP client
-2. **Base URL:** `https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev`
+2. **Base URL:** `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev`
 
 ### Quick Start Test Flow
 
@@ -693,20 +695,23 @@ Set these in Postman environment:
 
 ```json
 {
-  "base_url": "https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev",
+  "base_url": "https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev",
+  "websocket_url": "wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev",
   "session_id": "postman-test-{{$timestamp}}"
 }
 ```
 
 ---
 
-## WebSocket API (Future)
+## WebSocket API
 
-**Status:** Not yet implemented
+**Status:** ✅ Available
 
-**Planned Endpoint:** `wss://[websocket-api-id].execute-api.eu-west-1.amazonaws.com/dev`
+**Endpoint:** `wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev`
 
 **Use Case:** Streaming responses for real-time chat experience
+
+**Documentation:** See `WEBSOCKET_STREAMING_API.md` for complete WebSocket API documentation
 
 ---
 
@@ -730,6 +735,13 @@ Set these in Postman environment:
 ---
 
 ## Changelog
+
+### Version 2.0.0 (2026-03-25)
+- ✅ Switched to Amazon Nova Lite model
+- ✅ Added WebSocket streaming support
+- ✅ Added document management API
+- ✅ Enhanced IAM permissions for cross-region Bedrock access
+- ✅ Updated endpoint URLs
 
 ### Version 1.0.0 (2026-03-25)
 - ✅ Initial API release

@@ -263,7 +263,7 @@ POST /chat/query
 
 **Base URL:**
 ```
-https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev
+https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev
 ```
 
 **Endpoints:**
@@ -315,7 +315,7 @@ aws s3 cp test-doc.txt s3://rag-dev-doc-ingestion/uploads/
 
 # Wait for processing
 # Query should now return relevant context
-curl -X POST https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
+curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
   -H "Content-Type: application/json" \
   -d '{"question":"What is in the document?","sessionId":"test-session-011"}'
 ```

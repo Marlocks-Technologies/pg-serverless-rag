@@ -152,7 +152,7 @@ AWS Services Used:
 
 **Base URL:**
 ```
-https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev
+https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev
 ```
 
 **Available Endpoints:**
@@ -249,7 +249,7 @@ https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev
 **Input:**
 ```bash
 curl -X POST \
-  https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
+  https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
   -H "Content-Type: application/json" \
   -d '{
     "question": "What is the RAG document processing pipeline?",

@@ -12,11 +12,12 @@ info:
 
     ## Technology
     - **Embeddings:** Amazon Titan Embeddings v2 (1024-dim)
-    - **LLM:** Claude Sonnet 4.6
+    - **LLM:** Amazon Nova Lite (eu.amazon.nova-lite-v1:0)
+    - **Classification:** Claude 3 Haiku
     - **Vector Storage:** Amazon S3 Vectors
     - **Chat History:** DynamoDB
 
-  version: 1.0.0
+  version: 2.0.0
   contact:
     name: API Support
     url: https://github.com/Marlocks-Technologies/pg-serverless-rag
@@ -25,8 +26,10 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev
-    description: Development server
+  - url: https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev
+    description: Development REST API server
+  - url: wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev
+    description: Development WebSocket API server
 
 tags:
   - name: Health
