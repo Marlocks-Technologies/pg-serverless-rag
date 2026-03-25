@@ -1,0 +1,499 @@
+openapi: 3.0.3
+info:
+  title: RAG Platform API
+  description: |
+    REST API for the Retrieval Augmented Generation (RAG) Platform.
+
+    ## Features
+    - Document-based question answering with AI
+    - Semantic search across documents
+    - Conversation history management
+    - Multi-turn contextual conversations
+
+    ## Technology
+    - **Embeddings:** Amazon Titan Embeddings v2 (1024-dim)
+    - **LLM:** Claude Sonnet 4.6
+    - **Vector Storage:** Amazon S3 Vectors
+    - **Chat History:** DynamoDB
+
+  version: 1.0.0
+  contact:
+    name: API Support
+    url: https://github.com/Marlocks-Technologies/pg-serverless-rag
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev
+    description: Development server
+
+tags:
+  - name: Health
+    description: Service health checks
+  - name: Chat
+    description: RAG-powered chat operations
+  - name: Search
+    description: Document search operations
+  - name: History
+    description: Conversation history management
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the API service is running and healthy
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                service: chat-handler
+                version: 0.4.0
+                phase: "4"
+                features:
+                  - rag
+                  - search
+                  - citations
+                  - websocket
+                  - history
+                  - streaming
+                requestId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+  /chat/query:
+    post:
+      tags:
+        - Chat
+      summary: Chat query
+      description: Ask a question and get an AI-generated answer based on your documents
+      operationId: chatQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatQueryRequest'
+            examples:
+              simple:
+                summary: Simple question
+                value:
+                  question: What is Amazon Bedrock?
+                  sessionId: user-session-123
+              withOptions:
+                summary: Query with all options
+                value:
+                  question: What are the key features?
+                  sessionId: user-session-123
+                  topK: 5
+                  useHistory: true
+                  filters:
+                    category: documentation
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatQueryResponse'
+              example:
+                success: true
+                sessionId: user-session-123
+                answer: "Amazon Bedrock is a fully managed service that makes foundation models available through a unified API..."
+                citations:
+                  - source: aws-bedrock-guide.pdf
+                    documentId: abc123-def456-ghi789
+                    category: documentation
+                    chunkIndex: 0
+                    score: 0.87
+                metadata:
+                  chunks_retrieved: 3
+                  query_intent: factual
+                  filters_applied: null
+                requestId: xyz789-abc123-def456
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingQuestion:
+                  summary: Missing required field
+                  value:
+                    error: "Missing required field: question"
+                questionTooLong:
+                  summary: Question too long
+                  value:
+                    error: "Question too long (max 1000 characters)"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Query processing failed
+
+  /chat/search:
+    post:
+      tags:
+        - Search
+      summary: Document search
+      description: Search for relevant documents without generating an AI answer
+      operationId: searchDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+            example:
+              query: deployment best practices
+              topK: 10
+              filters:
+                category: technical
+      responses:
+        '200':
+          description: Successful search
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              example:
+                success: true
+                results:
+                  - id: doc123-chunk-0
+                    text: "Deployment best practices include automated testing..."
+                    metadata:
+                      documentId: doc123
+                      filename: deployment-guide.pdf
+                      category: technical
+                      chunkIndex: 0
+                    score: 0.92
+                count: 5
+                requestId: search-request-123
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chat/history/{sessionId}:
+    get:
+      tags:
+        - History
+      summary: Get chat history
+      description: Retrieve all messages from a conversation session
+      operationId: getChatHistory
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: Session identifier
+          schema:
+            type: string
+          example: user-session-123
+      responses:
+        '200':
+          description: Chat history retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatHistoryResponse'
+              example:
+                success: true
+                sessionId: user-session-123
+                messages:
+                  - Role: user
+                    Content: What is Amazon Bedrock?
+                    Timestamp: "2026-03-25T11:43:41.222322+00:00"
+                    SessionId: user-session-123
+                    TTL: 1782215021
+                  - Role: assistant
+                    Content: "Amazon Bedrock is a fully managed service..."
+                    Timestamp: "2026-03-25T11:43:41.265030+00:00"
+                    SessionId: user-session-123
+                    TTL: 1782215021
+                    Metadata:
+                      chunks_retrieved: 3
+                      citations:
+                        - source: aws-bedrock-guide.pdf
+                          documentId: abc123
+                          score: 0.87
+                count: 2
+                requestId: history-request-456
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chat/session/{sessionId}:
+    delete:
+      tags:
+        - History
+      summary: Delete session
+      description: Delete all conversation history for a session
+      operationId: deleteSession
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: Session identifier to delete
+          schema:
+            type: string
+          example: user-session-123
+      responses:
+        '200':
+          description: Session deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteSessionResponse'
+              example:
+                success: true
+                sessionId: user-session-123
+                messagesDeleted: 8
+                requestId: delete-request-789
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        service:
+          type: string
+        version:
+          type: string
+        phase:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        requestId:
+          type: string
+
+    ChatQueryRequest:
+      type: object
+      required:
+        - question
+      properties:
+        question:
+          type: string
+          maxLength: 1000
+          description: The user's question
+          example: What is Amazon Bedrock?
+        sessionId:
+          type: string
+          description: Session ID for conversation continuity (auto-generated if not provided)
+          example: user-session-123
+        topK:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Number of document chunks to retrieve
+        useHistory:
+          type: boolean
+          default: true
+          description: Whether to use conversation history for context
+        filters:
+          type: object
+          additionalProperties: true
+          description: Metadata filters for document retrieval
+          example:
+            category: documentation
+
+    ChatQueryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        sessionId:
+          type: string
+        answer:
+          type: string
+          description: AI-generated answer in Markdown format
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        metadata:
+          type: object
+          properties:
+            chunks_retrieved:
+              type: integer
+            query_intent:
+              type: string
+            filters_applied:
+              type: object
+              nullable: true
+        requestId:
+          type: string
+
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Search query
+          example: deployment best practices
+        topK:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: Number of results to return
+        filters:
+          type: object
+          additionalProperties: true
+          description: Metadata filters
+
+    SearchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        count:
+          type: integer
+        requestId:
+          type: string
+
+    SearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        metadata:
+          type: object
+          properties:
+            documentId:
+              type: string
+            filename:
+              type: string
+            category:
+              type: string
+            chunkIndex:
+              type: integer
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    ChatHistoryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        sessionId:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        count:
+          type: integer
+        requestId:
+          type: string
+
+    Message:
+      type: object
+      properties:
+        Role:
+          type: string
+          enum: [user, assistant]
+        Content:
+          type: string
+        Timestamp:
+          type: string
+          format: date-time
+        SessionId:
+          type: string
+        TTL:
+          type: number
+          description: Unix timestamp for DynamoDB TTL (30 days)
+        Metadata:
+          type: object
+          description: Additional data (assistant messages only)
+          properties:
+            chunks_retrieved:
+              type: number
+            citations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Citation'
+
+    DeleteSessionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        sessionId:
+          type: string
+        messagesDeleted:
+          type: integer
+        requestId:
+          type: string
+
+    Citation:
+      type: object
+      properties:
+        source:
+          type: string
+          description: Original filename
+        documentId:
+          type: string
+          description: Unique document identifier
+        category:
+          type: string
+          description: Document category
+        chunkIndex:
+          type: integer
+          description: Chunk number within document (0-based)
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Relevance score
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong

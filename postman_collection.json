@@ -1,0 +1,232 @@
+{
+  "info": {
+    "name": "RAG Platform API",
+    "description": "Complete API collection for the RAG (Retrieval Augmented Generation) Platform.\n\nFeatures:\n- Document-based Q&A with AI\n- Semantic search\n- Conversation history\n- Multi-turn context",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://yvf4p3dpp7.execute-api.eu-west-1.amazonaws.com/dev",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "postman-test-{{$timestamp}}",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check if the API service is running and healthy.\n\n**Expected Response:**\n- Status: 200 OK\n- Service status and feature list"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Chat Query - Simple",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"What is Amazon Bedrock?\",\n  \"sessionId\": \"{{session_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/chat/query",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "query"]
+        },
+        "description": "Ask a simple question to the RAG system.\n\n**Request:**\n- question: Your question (required)\n- sessionId: Session ID for conversation continuity\n\n**Response:**\n- answer: AI-generated response\n- citations: Source documents used\n- metadata: Processing information"
+      },
+      "response": []
+    },
+    {
+      "name": "3. Chat Query - With Options",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"What are the key features?\",\n  \"sessionId\": \"{{session_id}}\",\n  \"topK\": 5,\n  \"useHistory\": true,\n  \"filters\": {\n    \"category\": \"documentation\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/chat/query",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "query"]
+        },
+        "description": "Chat query with all optional parameters.\n\n**Parameters:**\n- topK: Number of chunks to retrieve (default: 5)\n- useHistory: Use conversation context (default: true)\n- filters: Metadata filters (optional)"
+      },
+      "response": []
+    },
+    {
+      "name": "4. Chat Query - Follow-up",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"Can you tell me more about the first feature?\",\n  \"sessionId\": \"{{session_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/chat/query",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "query"]
+        },
+        "description": "Ask a follow-up question that references previous context.\n\nThe system will use conversation history to understand \"the first feature\" refers to something mentioned earlier."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Document Search",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"deployment best practices\",\n  \"topK\": 10,\n  \"filters\": {\n    \"category\": \"technical\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/chat/search",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "search"]
+        },
+        "description": "Search for relevant documents without generating an AI answer.\n\n**Use Cases:**\n- Find relevant documents quickly\n- Build autocomplete suggestions\n- Display search results to users\n\n**Response:**\n- List of matching document chunks\n- Relevance scores\n- Metadata for each result"
+      },
+      "response": []
+    },
+    {
+      "name": "6. Get Chat History",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/chat/history/{{session_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "history", "{{session_id}}"]
+        },
+        "description": "Retrieve all messages from a conversation session.\n\n**Response:**\n- Array of messages (user + assistant)\n- Timestamps\n- Metadata (citations, chunk counts)\n- Message count"
+      },
+      "response": []
+    },
+    {
+      "name": "7. Delete Session",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/chat/session/{{session_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "session", "{{session_id}}"]
+        },
+        "description": "Delete all conversation history for a session.\n\n**Response:**\n- Success status\n- Number of messages deleted\n\n**Note:** This is permanent and cannot be undone."
+      },
+      "response": []
+    },
+    {
+      "name": "Test - Empty Context Query",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"What is the recipe for chocolate cake?\",\n  \"sessionId\": \"test-no-docs-{{$timestamp}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/chat/query",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "query"]
+        },
+        "description": "Test how the system handles questions with no relevant documents.\n\n**Expected:**\n- Honest response about missing information\n- chunks_retrieved: 0\n- Empty citations array"
+      },
+      "response": []
+    },
+    {
+      "name": "Test - Error: Missing Question",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"test-error-{{$timestamp}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/chat/query",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "query"]
+        },
+        "description": "Test error handling for missing required field.\n\n**Expected:**\n- Status: 400 Bad Request\n- Error message: \"Missing required field: question\""
+      },
+      "response": []
+    },
+    {
+      "name": "Test - Error: Question Too Long",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\",\n  \"sessionId\": \"test-error-{{$timestamp}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/chat/query",
+          "host": ["{{base_url}}"],
+          "path": ["chat", "query"]
+        },
+        "description": "Test error handling for question exceeding max length.\n\n**Expected:**\n- Status: 400 Bad Request\n- Error message: \"Question too long (max 1000 characters)\""
+      },
+      "response": []
+    }
+  ]
+}
