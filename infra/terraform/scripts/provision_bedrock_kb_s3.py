@@ -39,11 +39,40 @@ class BedrockKBProvisioner:
     def __init__(self, args: argparse.Namespace):
         self.args = args
         self.bedrock_agent = boto3.client('bedrock-agent', region_name=args.region)
+        self.s3vectors = boto3.client('s3vectors', region_name=args.region)
         self.ssm = boto3.client('ssm', region_name=args.region)
 
         self.kb_name = f"{args.project_name}-{args.environment}-knowledge-base"
         self.ds_name = f"{args.project_name}-{args.environment}-staging-source"
+        self.index_name = f"{args.project_name}-{args.environment}-vectors-index"
         self.ssm_prefix = f"/{args.project_name}/{args.environment}/bedrock"
+
+    def create_s3_vectors_index(self):
+        """Create S3 Vectors index if it doesn't exist."""
+        print(f"→ Creating S3 Vectors index...")
+        print(f"  Bucket: {self.args.vectors_bucket}")
+        print(f"  Index: {self.index_name}")
+
+        try:
+            # Check if index already exists
+            self.s3vectors.get_index(
+                vectorBucketName=self.args.vectors_bucket,
+                indexName=self.index_name
+            )
+            print(f"✓ S3 Vectors index already exists: {self.index_name}")
+            return
+        except ClientError as e:
+            if e.response['Error']['Code'] != 'NoSuchIndex':
+                raise
+
+        # Create the index - dimension 1024 for Titan Embeddings V2
+        self.s3vectors.create_index(
+            vectorBucketName=self.args.vectors_bucket,
+            indexName=self.index_name,
+            dimension=1024,  # Titan Embeddings V2 dimension
+            distanceMetric='COSINE'
+        )
+        print(f"✓ S3 Vectors index created: {self.index_name}")
 
     def check_existing_kb(self) -> Optional[str]:
         """Check if Knowledge Base already exists in SSM."""
@@ -98,7 +127,8 @@ class BedrockKBProvisioner:
                 storageConfiguration={
                     'type': 'S3_VECTORS',
                     's3VectorsConfiguration': {
-                        'vectorBucketArn': f"arn:aws:s3:::{self.args.vectors_bucket}"
+                        'vectorBucketArn': f"arn:aws:s3:::{self.args.vectors_bucket}",
+                        'indexName': self.index_name
                     }
                 }
             )
@@ -258,6 +288,9 @@ class BedrockKBProvisioner:
         if existing_kb_id:
             print("→ Skipping provisioning (KB already configured)")
             return
+
+        # Create S3 Vectors index first
+        self.create_s3_vectors_index()
 
         # Create Knowledge Base with S3 Vectors
         kb = self.create_knowledge_base_s3_vectors()
