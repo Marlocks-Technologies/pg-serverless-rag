@@ -19,7 +19,7 @@ class DocumentClassifier:
 
     def __init__(
         self,
-        model_id: str = "anthropic.claude-3-5-haiku-20241022-v1:0",
+        model_id: str = "anthropic.claude-haiku-4-5-20251001-v1:0",
         region: str = 'us-east-1',
         system_prompt_path: str = None
     ):
