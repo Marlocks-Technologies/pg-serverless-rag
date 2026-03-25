@@ -72,8 +72,8 @@ class BedrockKBProvisioner:
             vectorBucketName=self.args.vectors_bucket,
             indexName=self.index_name,
             dimension=1024,  # Titan Embeddings V2 dimension
-            distanceMetric='COSINE',
-            dataType='float32'  # Standard float32 vectors (must be lowercase)
+            distanceMetric='cosine',  # Must be lowercase: euclidean or cosine
+            dataType='float32'  # Must be lowercase: float32
         )
         print(f"✓ S3 Vectors index created: {self.index_name}")
 
