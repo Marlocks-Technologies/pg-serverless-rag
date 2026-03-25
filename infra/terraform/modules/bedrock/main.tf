@@ -64,82 +64,18 @@ resource "null_resource" "provision_kb_s3_vectors" {
 
 # ─── Store KB Identifiers in SSM Parameter Store ─────────────────────────────
 
-resource "aws_ssm_parameter" "knowledge_base_id" {
-  name        = local.kb_id_param
-  type        = "String"
-  value       = "PLACEHOLDER"
-  description = "Bedrock Knowledge Base ID for ${var.project_name}-${var.environment}. Populated by Python provisioning script."
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = merge(var.tags, {
-    Name = local.kb_id_param
-  })
-
-  depends_on = [null_resource.provision_kb_s3_vectors]
-}
-
-resource "aws_ssm_parameter" "data_source_id" {
-  name        = local.ds_id_param
-  type        = "String"
-  value       = "PLACEHOLDER"
-  description = "Bedrock Knowledge Base Data Source ID for ${var.project_name}-${var.environment}. Populated by Python provisioning script."
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = merge(var.tags, {
-    Name = local.ds_id_param
-  })
-
-  depends_on = [null_resource.provision_kb_s3_vectors]
-}
-
-resource "aws_ssm_parameter" "knowledge_base_arn" {
-  name        = local.kb_arn_param
-  type        = "String"
-  value       = "PLACEHOLDER"
-  description = "Bedrock Knowledge Base ARN for ${var.project_name}-${var.environment}. Populated by Python provisioning script."
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-
-  tags = merge(var.tags, {
-    Name = local.kb_arn_param
-  })
-
-  depends_on = [null_resource.provision_kb_s3_vectors]
-}
-
-# ─── Read Back KB Identifiers ─────────────────────────────────────────────────
-
+# Read SSM parameters created by Python provisioning script
 data "aws_ssm_parameter" "knowledge_base_id" {
-  name = aws_ssm_parameter.knowledge_base_id.name
-
-  depends_on = [
-    null_resource.provision_kb_s3_vectors,
-    aws_ssm_parameter.knowledge_base_id
-  ]
+  name       = local.kb_id_param
+  depends_on = [null_resource.provision_kb_s3_vectors]
 }
 
 data "aws_ssm_parameter" "data_source_id" {
-  name = aws_ssm_parameter.data_source_id.name
-
-  depends_on = [
-    null_resource.provision_kb_s3_vectors,
-    aws_ssm_parameter.data_source_id
-  ]
+  name       = local.ds_id_param
+  depends_on = [null_resource.provision_kb_s3_vectors]
 }
 
 data "aws_ssm_parameter" "knowledge_base_arn" {
-  name = aws_ssm_parameter.knowledge_base_arn.name
-
-  depends_on = [
-    null_resource.provision_kb_s3_vectors,
-    aws_ssm_parameter.knowledge_base_arn
-  ]
+  name       = local.kb_arn_param
+  depends_on = [null_resource.provision_kb_s3_vectors]
 }
