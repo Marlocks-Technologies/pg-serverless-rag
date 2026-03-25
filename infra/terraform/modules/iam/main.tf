@@ -274,6 +274,23 @@ data "aws_iam_policy_document" "bedrock_kb_policy" {
     ]
   }
 
+  # S3 Vectors API - permissions for vector operations
+  statement {
+    sid    = "S3VectorsAPI"
+    effect = "Allow"
+    actions = [
+      "s3vectors:QueryVectors",
+      "s3vectors:PutVectors",
+      "s3vectors:DeleteVectors",
+      "s3vectors:GetIndex",
+      "s3vectors:ListIndexes",
+    ]
+    resources = [
+      "arn:aws:s3vectors:*:${var.aws_account_id}:bucket/${var.project_name}-${var.environment}-kb-vectors",
+      "arn:aws:s3vectors:*:${var.aws_account_id}:bucket/${var.project_name}-${var.environment}-kb-vectors/*",
+    ]
+  }
+
   # KMS (conditional)
   dynamic "statement" {
     for_each = local.use_kms ? [1] : []
