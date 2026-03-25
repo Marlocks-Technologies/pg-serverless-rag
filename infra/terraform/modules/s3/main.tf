@@ -67,6 +67,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "ingestion" {
 }
 
 resource "aws_s3_bucket_notification" "ingestion" {
+  count = var.ingestion_notification_target_arn != "" ? 1 : 0
+
   bucket      = aws_s3_bucket.ingestion.id
   eventbridge = false
 

@@ -98,7 +98,7 @@ class BedrockKBProvisioner:
                 storageConfiguration={
                     'type': 'S3_VECTORS',
                     's3VectorsConfiguration': {
-                        'bucketArn': f"arn:aws:s3:::{self.args.vectors_bucket}"
+                        'vectorBucketArn': f"arn:aws:s3:::{self.args.vectors_bucket}"
                     }
                 }
             )
