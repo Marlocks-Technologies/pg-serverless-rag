@@ -47,18 +47,20 @@ class BedrockKBProvisioner:
         self.index_name = f"{args.project_name}-{args.environment}-vectors-index"
         self.ssm_prefix = f"/{args.project_name}/{args.environment}/bedrock"
 
-    def create_vector_bucket(self):
-        """Create S3 Vector bucket if it doesn't exist."""
+    def create_vector_bucket(self) -> str:
+        """Create S3 Vector bucket if it doesn't exist. Returns the vector bucket ARN."""
         print(f"→ Creating S3 Vector bucket...")
         print(f"  Bucket: {self.args.vectors_bucket}")
 
         try:
             # Check if vector bucket already exists
-            self.s3vectors.get_vector_bucket(
+            response = self.s3vectors.get_vector_bucket(
                 vectorBucketName=self.args.vectors_bucket
             )
+            vector_bucket_arn = response['vectorBucket']['vectorBucketArn']
             print(f"✓ S3 Vector bucket already exists: {self.args.vectors_bucket}")
-            return
+            print(f"  ARN: {vector_bucket_arn}")
+            return vector_bucket_arn
         except ClientError as e:
             error_code = e.response['Error']['Code']
             if error_code not in ['NoSuchBucket', 'NotFoundException', 'ResourceNotFoundException']:
@@ -66,25 +68,30 @@ class BedrockKBProvisioner:
             # Bucket doesn't exist, we'll create it below
 
         # Create the vector bucket
-        self.s3vectors.create_vector_bucket(
+        response = self.s3vectors.create_vector_bucket(
             vectorBucketName=self.args.vectors_bucket
         )
+        vector_bucket_arn = response['vectorBucket']['vectorBucketArn']
         print(f"✓ S3 Vector bucket created: {self.args.vectors_bucket}")
+        print(f"  ARN: {vector_bucket_arn}")
+        return vector_bucket_arn
 
-    def create_s3_vectors_index(self):
-        """Create S3 Vectors index if it doesn't exist."""
+    def create_s3_vectors_index(self) -> str:
+        """Create S3 Vectors index if it doesn't exist. Returns the index ARN."""
         print(f"→ Creating S3 Vectors index...")
         print(f"  Bucket: {self.args.vectors_bucket}")
         print(f"  Index: {self.index_name}")
 
         try:
             # Check if index already exists
-            self.s3vectors.get_index(
+            response = self.s3vectors.get_index(
                 vectorBucketName=self.args.vectors_bucket,
                 indexName=self.index_name
             )
+            index_arn = response['index']['indexArn']
             print(f"✓ S3 Vectors index already exists: {self.index_name}")
-            return
+            print(f"  ARN: {index_arn}")
+            return index_arn
         except ClientError as e:
             error_code = e.response['Error']['Code']
             if error_code not in ['NoSuchIndex', 'NotFoundException', 'ResourceNotFoundException']:
@@ -92,14 +99,17 @@ class BedrockKBProvisioner:
             # Index doesn't exist, we'll create it below
 
         # Create the index - dimension 1024 for Titan Embeddings V2
-        self.s3vectors.create_index(
+        response = self.s3vectors.create_index(
             vectorBucketName=self.args.vectors_bucket,
             indexName=self.index_name,
             dimension=1024,  # Titan Embeddings V2 dimension
             distanceMetric='cosine',  # Must be lowercase: euclidean or cosine
             dataType='float32'  # Must be lowercase: float32
         )
+        index_arn = response['index']['indexArn']
         print(f"✓ S3 Vectors index created: {self.index_name}")
+        print(f"  ARN: {index_arn}")
+        return index_arn
 
     def check_existing_kb(self) -> Optional[str]:
         """Check if Knowledge Base already exists in SSM."""
@@ -126,20 +136,20 @@ class BedrockKBProvisioner:
                 raise
         return None
 
-    def create_knowledge_base_s3_vectors(self) -> Dict[str, Any]:
+    def create_knowledge_base_s3_vectors(self, vector_bucket_arn: str, index_arn: str) -> Dict[str, Any]:
         """
         Create Bedrock Knowledge Base with S3 Vectors storage.
 
-        This implementation attempts multiple approaches:
-        1. Native S3 storage type (if available)
-        2. Custom metadata approach with S3
-        3. Fallback guidance if not yet supported
+        Args:
+            vector_bucket_arn: The ARN of the S3 Vector bucket
+            index_arn: The ARN of the S3 Vectors index
         """
         print(f"→ Creating Bedrock Knowledge Base with S3 Vectors...")
         print(f"  Name: {self.kb_name}")
-        print(f"  Vectors Bucket: {self.args.vectors_bucket}")
+        print(f"  Vector Bucket ARN: {vector_bucket_arn}")
+        print(f"  Index ARN: {index_arn}")
 
-        # Approach 1: Try native S3 storage type
+        # Create Knowledge Base with S3 Vectors
         try:
             response = self.bedrock_agent.create_knowledge_base(
                 name=self.kb_name,
@@ -154,21 +164,21 @@ class BedrockKBProvisioner:
                 storageConfiguration={
                     'type': 'S3_VECTORS',
                     's3VectorsConfiguration': {
-                        'vectorBucketArn': f"arn:aws:s3:::{self.args.vectors_bucket}",
-                        'indexName': self.index_name
+                        'vectorBucketArn': vector_bucket_arn,
+                        'indexArn': index_arn
                     }
                 }
             )
 
             kb = response['knowledgeBase']
-            print(f"✓ Knowledge Base created with S3 storage: {kb['knowledgeBaseId']}")
+            print(f"✓ Knowledge Base created with S3 Vectors: {kb['knowledgeBaseId']}")
             return kb
 
         except ClientError as e:
             error_code = e.response['Error']['Code']
             error_msg = e.response['Error']['Message']
 
-            print(f"\n⚠ S3 storage type not yet supported: {error_code}")
+            print(f"\n⚠ Failed to create Knowledge Base: {error_code}")
             print(f"  Message: {error_msg}\n")
 
             # Check what storage types are supported
@@ -317,13 +327,13 @@ class BedrockKBProvisioner:
             return
 
         # Create S3 Vector bucket first (if not already created)
-        self.create_vector_bucket()
+        vector_bucket_arn = self.create_vector_bucket()
 
         # Create S3 Vectors index
-        self.create_s3_vectors_index()
+        index_arn = self.create_s3_vectors_index()
 
-        # Create Knowledge Base with S3 Vectors
-        kb = self.create_knowledge_base_s3_vectors()
+        # Create Knowledge Base with S3 Vectors using the actual ARNs
+        kb = self.create_knowledge_base_s3_vectors(vector_bucket_arn, index_arn)
 
         kb_id = kb['knowledgeBaseId']
         kb_arn = kb['knowledgeBaseArn']
