@@ -122,7 +122,7 @@ module "document_processor_lambda" {
     STAGING_BUCKET      = "${var.project_name}-${var.environment}-doc-staging"
     VECTORS_BUCKET      = "${var.project_name}-${var.environment}-kb-vectors"
     CHAT_HISTORY_TABLE  = "${var.project_name}-${var.environment}-chat-history"
-    KNOWLEDGE_BASE_ID   = "PLACEHOLDER"
+    KNOWLEDGE_BASE_ID   = module.bedrock.knowledge_base_id
     EMBEDDING_MODEL_ID  = "amazon.titan-embed-text-v2:0"
     GENERATION_MODEL_ID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
     HAIKU_MODEL_ID      = "anthropic.claude-3-haiku-20240307-v1:0"
@@ -158,7 +158,7 @@ module "chat_handler_lambda" {
     STAGING_BUCKET      = "${var.project_name}-${var.environment}-doc-staging"
     VECTORS_BUCKET      = "${var.project_name}-${var.environment}-kb-vectors"
     CHAT_HISTORY_TABLE  = "${var.project_name}-${var.environment}-chat-history"
-    KNOWLEDGE_BASE_ID   = "PLACEHOLDER"
+    KNOWLEDGE_BASE_ID   = module.bedrock.knowledge_base_id
     EMBEDDING_MODEL_ID  = "amazon.titan-embed-text-v2:0"
     GENERATION_MODEL_ID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
     HAIKU_MODEL_ID      = "anthropic.claude-3-haiku-20240307-v1:0"

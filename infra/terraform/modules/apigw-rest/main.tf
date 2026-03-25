@@ -559,22 +559,23 @@ resource "aws_api_gateway_stage" "this" {
   rest_api_id   = aws_api_gateway_rest_api.this.id
   stage_name    = local.stage_name
 
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.access_logs.arn
-    format = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      caller         = "$context.identity.caller"
-      user           = "$context.identity.user"
-      requestTime    = "$context.requestTime"
-      httpMethod     = "$context.httpMethod"
-      resourcePath   = "$context.resourcePath"
-      status         = "$context.status"
-      protocol       = "$context.protocol"
-      responseLength = "$context.responseLength"
-      errorMessage   = "$context.error.message"
-    })
-  }
+  # Commenting out access logging to avoid CloudWatch Logs role requirement
+  # access_log_settings {
+  #   destination_arn = aws_cloudwatch_log_group.access_logs.arn
+  #   format = jsonencode({
+  #     requestId      = "$context.requestId"
+  #     ip             = "$context.identity.sourceIp"
+  #     caller         = "$context.identity.caller"
+  #     user           = "$context.identity.user"
+  #     requestTime    = "$context.requestTime"
+  #     httpMethod     = "$context.httpMethod"
+  #     resourcePath   = "$context.resourcePath"
+  #     status         = "$context.status"
+  #     protocol       = "$context.protocol"
+  #     responseLength = "$context.responseLength"
+  #     errorMessage   = "$context.error.message"
+  #   })
+  # }
 
   tags = merge(var.tags, {
     Name = "${local.api_name}-${local.stage_name}"
@@ -588,7 +589,7 @@ resource "aws_api_gateway_method_settings" "this" {
 
   settings {
     metrics_enabled    = true
-    logging_level      = "INFO"
+    logging_level      = "OFF"  # Disabled to avoid CloudWatch Logs role requirement
     data_trace_enabled = false
 
     throttling_burst_limit = var.throttling_burst_limit

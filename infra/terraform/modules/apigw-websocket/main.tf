@@ -77,7 +77,7 @@ resource "aws_apigatewayv2_stage" "this" {
   # }
 
   default_route_settings {
-    logging_level            = "ERROR"  # Changed to ERROR to reduce noise
+    logging_level            = "OFF"  # Disabled to avoid CloudWatch Logs role requirement
     data_trace_enabled       = false
     detailed_metrics_enabled = true
     throttling_burst_limit   = 100
