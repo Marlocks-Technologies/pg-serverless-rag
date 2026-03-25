@@ -280,10 +280,12 @@ data "aws_iam_policy_document" "bedrock_kb_policy" {
     effect = "Allow"
     actions = [
       "s3vectors:QueryVectors",
+      "s3vectors:GetVectors",
       "s3vectors:PutVectors",
       "s3vectors:DeleteVectors",
       "s3vectors:GetIndex",
       "s3vectors:ListIndexes",
+      "s3vectors:GetVectorBucket",
     ]
     resources = [
       "arn:aws:s3vectors:*:${var.aws_account_id}:bucket/${var.project_name}-${var.environment}-kb-vectors",
