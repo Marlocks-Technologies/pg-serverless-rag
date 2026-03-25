@@ -62,8 +62,10 @@ class BedrockKBProvisioner:
             print(f"✓ S3 Vectors index already exists: {self.index_name}")
             return
         except ClientError as e:
-            if e.response['Error']['Code'] != 'NoSuchIndex':
+            error_code = e.response['Error']['Code']
+            if error_code not in ['NoSuchIndex', 'NotFoundException', 'ResourceNotFoundException']:
                 raise
+            # Index doesn't exist, we'll create it below
 
         # Create the index - dimension 1024 for Titan Embeddings V2
         self.s3vectors.create_index(
