@@ -35,7 +35,7 @@ resource "aws_iam_role" "document_processor" {
 }
 
 data "aws_iam_policy_document" "document_processor_policy" {
-  # S3 access on ingestion and staging buckets
+  # S3 access on ingestion, staging, and vectors buckets
   statement {
     sid    = "S3BucketAccess"
     effect = "Allow"
@@ -47,6 +47,7 @@ data "aws_iam_policy_document" "document_processor_policy" {
     resources = [
       "${var.ingestion_bucket_arn}/*",
       "${var.staging_bucket_arn}/*",
+      "${var.vectors_bucket_arn}/*",
     ]
   }
 
