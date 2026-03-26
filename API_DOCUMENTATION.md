@@ -1,8 +1,8 @@
 # RAG Platform API Documentation
 
 **Version:** 2.0.0
-**Base URL:** `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev`
-**WebSocket URL:** `wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev`
+**Base URL:** `https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev`
+**WebSocket URL:** `wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev`
 **Environment:** Development
 **Region:** eu-west-1
 
@@ -73,7 +73,7 @@ Check if the API service is running and healthy.
 
 **Request:**
 ```bash
-curl -X GET https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/health
+curl -X GET https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/health
 ```
 
 **Response:** `200 OK`
@@ -128,7 +128,7 @@ Ask a question and get an AI-generated answer based on your documents.
 
 **Example Request:**
 ```bash
-curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
+curl -X POST https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
   -H "Content-Type: application/json" \
   -d '{
     "question": "What is Amazon Bedrock?",
@@ -221,7 +221,7 @@ Search for relevant documents without generating an answer.
 
 **Example Request:**
 ```bash
-curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/search \
+curl -X POST https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/search \
   -H "Content-Type: application/json" \
   -d '{
     "query": "deployment best practices",
@@ -267,7 +267,7 @@ Retrieve conversation history for a specific session.
 
 **Example Request:**
 ```bash
-curl -X GET https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/history/demo-session-001
+curl -X GET https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/history/demo-session-001
 ```
 
 **Response:** `200 OK`
@@ -334,7 +334,7 @@ Delete all conversation history for a session.
 
 **Example Request:**
 ```bash
-curl -X DELETE https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/session/demo-session-001
+curl -X DELETE https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/session/demo-session-001
 ```
 
 **Response:** `200 OK`
@@ -442,7 +442,7 @@ interface Filters {
 
 ### Prerequisites
 1. **Postman** (recommended) or any HTTP client
-2. **Base URL:** `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev`
+2. **Base URL:** `https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev`
 
 ### Quick Start Test Flow
 
@@ -695,8 +695,8 @@ Set these in Postman environment:
 
 ```json
 {
-  "base_url": "https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev",
-  "websocket_url": "wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev",
+  "base_url": "https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev",
+  "websocket_url": "wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev",
   "session_id": "postman-test-{{$timestamp}}"
 }
 ```
@@ -707,7 +707,7 @@ Set these in Postman environment:
 
 **Status:** ✅ Available
 
-**Endpoint:** `wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev`
+**Endpoint:** `wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev`
 
 **Use Case:** Streaming responses for real-time chat experience
 

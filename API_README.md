@@ -23,10 +23,10 @@ This directory contains everything you need to test and integrate with the RAG P
 
 ```bash
 # Health check
-curl https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/health
+curl https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/health
 
 # Ask a question
-curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
+curl -X POST https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
   -H "Content-Type: application/json" \
   -d '{"question":"What documents are available?","sessionId":"test-123"}'
 ```
@@ -50,7 +50,7 @@ curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/que
 
 ## 🎯 API Endpoints
 
-**Base URL:** `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev`
+**Base URL:** `https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev`
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
@@ -125,7 +125,7 @@ POST /chat/search
 ```javascript
 async function askQuestion(question, sessionId) {
   const response = await fetch(
-    'https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query',
+    'https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -148,7 +148,7 @@ import requests
 
 def ask_question(question: str, session_id: str):
     response = requests.post(
-        'https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query',
+        'https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query',
         json={
             'question': question,
             'sessionId': session_id
@@ -171,7 +171,7 @@ function ChatInterface() {
   const [messages, setMessages] = useState([]);
 
   async function sendMessage() {
-    const response = await fetch('https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query', {
+    const response = await fetch('https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -367,7 +367,7 @@ import axios from 'axios';
 
 async function askQuestion(question, sessionId) {
   const response = await axios.post(
-    'https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query',
+    'https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query',
     { question, sessionId }
   );
   return response.data;
@@ -382,7 +382,7 @@ import 'dart:convert';
 
 Future<Map<String, dynamic>> askQuestion(String question, String sessionId) async {
   final response = await http.post(
-    Uri.parse('https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query'),
+    Uri.parse('https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query'),
     headers: {'Content-Type': 'application/json'},
     body: json.encode({
       'question': question,
@@ -399,7 +399,7 @@ Future<Map<String, dynamic>> askQuestion(String question, String sessionId) asyn
 ## 🐛 Troubleshooting
 
 ### API not responding
-- Check health endpoint: `curl https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/health`
+- Check health endpoint: `curl https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/health`
 - Verify you're using the correct base URL
 - Check internet connection
 

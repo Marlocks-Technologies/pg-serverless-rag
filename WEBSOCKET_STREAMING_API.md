@@ -13,7 +13,7 @@ The WebSocket API provides:
 - ✅ **Bi-directional** - send and receive messages over persistent connection
 - ✅ **Session management** - maintain context across WebSocket connection
 
-**WebSocket URL:** `wss://[websocket-api-id].execute-api.eu-west-1.amazonaws.com/dev`
+**WebSocket URL:** `wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev`
 
 ---
 
@@ -53,7 +53,7 @@ Triggered when client connects to WebSocket.
 
 **Client Action:**
 ```javascript
-const ws = new WebSocket('wss://[api-id].execute-api.eu-west-1.amazonaws.com/dev');
+const ws = new WebSocket('wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev');
 
 ws.onopen = () => {
   console.log('Connected to WebSocket');
@@ -252,7 +252,7 @@ class RAGWebSocketClient {
 
 // Usage
 const client = new RAGWebSocketClient(
-  'wss://[api-id].execute-api.eu-west-1.amazonaws.com/dev',
+  'wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev',
   'user-session-123'
 );
 
@@ -400,7 +400,7 @@ function StreamingChatInterface() {
     citations,
     sendMessage
   } = useRAGWebSocket(
-    'wss://[api-id].execute-api.eu-west-1.amazonaws.com/dev',
+    'wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev',
     'user-session-123'
   );
 
@@ -552,7 +552,7 @@ class RAGWebSocketClient:
 # Usage
 async def main():
     client = RAGWebSocketClient(
-        'wss://[api-id].execute-api.eu-west-1.amazonaws.com/dev',
+        'wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev',
         'user-session-123'
     )
 

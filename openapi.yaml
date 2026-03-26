@@ -26,9 +26,9 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev
+  - url: https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev
     description: Development REST API server
-  - url: wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev
+  - url: wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev
     description: Development WebSocket API server
 
 tags:

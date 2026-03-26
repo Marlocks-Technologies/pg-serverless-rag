@@ -8,12 +8,12 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev",
+      "value": "https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev",
       "type": "string"
     },
     {
       "key": "websocket_url",
-      "value": "wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev",
+      "value": "wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev",
       "type": "string"
     },
     {

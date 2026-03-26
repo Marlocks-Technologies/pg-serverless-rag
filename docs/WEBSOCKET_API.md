@@ -11,7 +11,7 @@ wss://<api-gateway-id>.execute-api.<region>.amazonaws.com/<stage>
 
 **Example (Dev Environment):**
 ```
-wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev
+wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev
 ```
 
 ## Connection Lifecycle
@@ -20,7 +20,7 @@ wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev
 Establish WebSocket connection to the endpoint. The connection is stored in DynamoDB with an automatic TTL for cleanup.
 
 ```javascript
-const ws = new WebSocket('wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev');
+const ws = new WebSocket('wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev');
 
 ws.onopen = () => {
   console.log('WebSocket connected');
@@ -211,7 +211,7 @@ class RAGWebSocketClient {
 
 // Usage
 const client = new RAGWebSocketClient(
-  'wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev'
+  'wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev'
 );
 
 client.onChunk = (content) => {
@@ -246,7 +246,7 @@ import json
 import websockets
 
 async def chat_with_rag(question):
-    uri = "wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev"
+    uri = "wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev"
 
     async with websockets.connect(uri) as ws:
         # Send question

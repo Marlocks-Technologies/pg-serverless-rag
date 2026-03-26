@@ -19,6 +19,38 @@ resource "aws_api_gateway_rest_api" "this" {
   })
 }
 
+# Ensure API Gateway generated error responses (4XX/5XX) include CORS headers.
+# This prevents browser-side CORS failures when requests fail before Lambda returns.
+resource "aws_api_gateway_gateway_response" "default_4xx" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  response_type = "DEFAULT_4XX"
+
+  response_templates = {
+    "application/json" = "{\"message\":$context.error.messageString}"
+  }
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'${local.cors_origin}'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "default_5xx" {
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  response_type = "DEFAULT_5XX"
+
+  response_templates = {
+    "application/json" = "{\"message\":$context.error.messageString}"
+  }
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin"  = "'${local.cors_origin}'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,PUT,DELETE,OPTIONS'"
+  }
+}
+
 # ─── CloudWatch Log Group for Access Logs ────────────────────────────────────
 
 resource "aws_cloudwatch_log_group" "access_logs" {
@@ -589,7 +621,7 @@ resource "aws_api_gateway_method_settings" "this" {
 
   settings {
     metrics_enabled    = true
-    logging_level      = "OFF"  # Disabled to avoid CloudWatch Logs role requirement
+    logging_level      = "OFF" # Disabled to avoid CloudWatch Logs role requirement
     data_trace_enabled = false
 
     throttling_burst_limit = var.throttling_burst_limit

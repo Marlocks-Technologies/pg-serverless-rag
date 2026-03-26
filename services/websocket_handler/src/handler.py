@@ -19,6 +19,8 @@ sys.path.insert(0, '/opt/python')
 
 import boto3
 from botocore.exceptions import ClientError
+from shared.rag_engine import RAGEngine
+from shared.conversation_history import ConversationHistory
 from shared.logger import get_logger
 
 logger = get_logger(__name__)
@@ -29,14 +31,15 @@ class WebSocketHandler:
 
     def __init__(self):
         """Initialize AWS clients and configuration."""
+        self.aws_region = os.environ.get('AWS_REGION', 'eu-west-1')
         self.dynamodb = boto3.resource('dynamodb')
-        self.bedrock_runtime = boto3.client('bedrock-agent-runtime', region_name=os.environ.get('AWS_REGION', 'eu-west-1'))
         self.apigw_management = None  # Initialized per connection
 
         # Configuration from environment
         self.connections_table_name = os.environ.get('CONNECTIONS_TABLE', 'rag-mt-dev-ws-connections')
         self.chat_history_table_name = os.environ['CHAT_HISTORY_TABLE']
-        self.knowledge_base_id = os.environ['KNOWLEDGE_BASE_ID']
+        self.vectors_bucket = os.environ.get('VECTORS_BUCKET')
+        self.embedding_model_id = os.environ.get('EMBEDDING_MODEL_ID', 'amazon.titan-embed-text-v2:0')
         self.generation_model_id = os.environ['GENERATION_MODEL_ID']
 
         # DynamoDB tables
@@ -47,6 +50,31 @@ class WebSocketHandler:
             self.connections_table = None
 
         self.chat_history_table = self.dynamodb.Table(self.chat_history_table_name)
+        self.rag_engine = None
+        self.history = ConversationHistory(
+            table_name=self.chat_history_table_name,
+            region=self.aws_region
+        )
+
+    def _ensure_rag_engine(self):
+        """Lazily initialize RAG engine to avoid connect-route failures."""
+        if self.rag_engine is not None:
+            return
+
+        if not self.vectors_bucket:
+            # Derive default vectors bucket from table naming convention.
+            # Example: rag-dev-chat-history -> rag-dev-kb-vectors
+            self.vectors_bucket = self.chat_history_table_name.replace(
+                "-chat-history",
+                "-kb-vectors"
+            )
+
+        self.rag_engine = RAGEngine(
+            vectors_bucket=self.vectors_bucket,
+            embedding_model_id=self.embedding_model_id,
+            generation_model_id=self.generation_model_id,
+            region=self.aws_region
+        )
 
     def initialize_management_api(self, domain_name: str, stage: str):
         """Initialize API Gateway Management API client."""
@@ -113,6 +141,7 @@ class WebSocketHandler:
             question = message.get('question')
             session_id = message.get('sessionId', f"ws-{connection_id}")
             top_k = message.get('topK', 5)
+            filters = message.get('filters')
 
             if not question:
                 self._send_error(connection_id, "Missing required field: question")
@@ -130,39 +159,20 @@ class WebSocketHandler:
             citations = []
 
             try:
-                # Retrieve and generate with streaming
-                response = self.bedrock_runtime.retrieve_and_generate(
-                    input={'text': question},
-                    retrieveAndGenerateConfiguration={
-                        'type': 'KNOWLEDGE_BASE',
-                        'knowledgeBaseConfiguration': {
-                            'knowledgeBaseId': self.knowledge_base_id,
-                            'modelArn': f"arn:aws:bedrock:eu-west-1::foundation-model/{self.generation_model_id}",
-                            'retrievalConfiguration': {
-                                'vectorSearchConfiguration': {
-                                    'numberOfResults': top_k
-                                }
-                            }
-                        }
-                    }
+                # Reuse the same RAG path as the REST handler for consistency.
+                self._ensure_rag_engine()
+                conversation_context = self.history.get_recent_context(
+                    session_id=session_id,
+                    max_turns=5
                 )
-
-                # Get response text
-                output = response.get('output', {})
-                full_response = output.get('text', '')
-
-                # Extract citations
-                citations_data = response.get('citations', [])
-                for citation in citations_data:
-                    retrieved_refs = citation.get('retrievedReferences', [])
-                    for ref in retrieved_refs:
-                        location = ref.get('location', {})
-                        s3_location = location.get('s3Location', {})
-                        citations.append({
-                            'text': ref.get('content', {}).get('text', ''),
-                            'source': s3_location.get('uri', ''),
-                            'score': ref.get('metadata', {}).get('score', 0)
-                        })
+                result = self.rag_engine.conversational_query(
+                    question=question,
+                    conversation_history=conversation_context,
+                    filters=filters,
+                    top_k=top_k
+                )
+                full_response = result.get('answer', '')
+                citations = result.get('citations', [])
 
                 # Stream response in chunks (simulate streaming for now)
                 chunk_size = 10  # words per chunk
@@ -195,8 +205,21 @@ class WebSocketHandler:
                     'totalTokens': len(full_response.split())
                 })
 
-                # Store in chat history
-                self._save_to_history(session_id, question, full_response, citations)
+                # Store in chat history in the same schema as REST handler.
+                self.history.save_message(
+                    session_id=session_id,
+                    role='user',
+                    content=question
+                )
+                self.history.save_message(
+                    session_id=session_id,
+                    role='assistant',
+                    content=full_response,
+                    metadata={
+                        'citations': citations,
+                        'chunks_retrieved': result.get('metadata', {}).get('chunks_retrieved', 0)
+                    }
+                )
 
                 log.info("chat_completed", response_length=len(full_response))
                 return {"statusCode": 200}

@@ -8,14 +8,14 @@ Quick start guide for integrating the RAG Platform API into your frontend applic
 
 ### 1. Test the API
 
-**Base URL:** `https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev`
+**Base URL:** `https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev`
 
 ```bash
 # Health check
-curl https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/health
+curl https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/health
 
 # Ask a question
-curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
+curl -X POST https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
   -H "Content-Type: application/json" \
   -d '{"question": "What documents are available?", "sessionId": "test-123"}'
 ```
@@ -45,7 +45,7 @@ npm install axios
 ```typescript
 // config.ts
 export const API_CONFIG = {
-  baseUrl: 'https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev',
+  baseUrl: 'https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -302,7 +302,7 @@ const loading = ref(false);
 const sessionId = ref(`session-${Date.now()}`);
 const messagesContainer = ref<HTMLElement | null>(null);
 
-const API_BASE = 'https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev';
+const API_BASE = 'https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev';
 
 onMounted(() => {
   loadHistory();
@@ -451,7 +451,7 @@ button:disabled {
 
 ```typescript
 // ragAPI.ts
-const API_BASE = 'https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev';
+const API_BASE = 'https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev';
 
 class RAGApiClient {
   private baseUrl: string;
