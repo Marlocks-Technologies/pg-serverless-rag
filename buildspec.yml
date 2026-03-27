@@ -13,10 +13,16 @@ phases:
       - cd services/document_processor && chmod +x package.sh && ./package.sh && cd ../..
       - echo "Packaging chat handler Lambda"
       - cd services/chat_handler && chmod +x package.sh && ./package.sh && cd ../..
+      - echo "Packaging document manager Lambda"
+      - cd services/document_manager && chmod +x package.sh && ./package.sh && cd ../..
+      - echo "Packaging websocket handler Lambda"
+      - cd services/websocket_handler && chmod +x package.sh && ./package.sh && cd ../..
       - echo "Verifying package artifacts"
       - ls -lh services/shared/shared-layer.zip
       - ls -lh services/document_processor/function.zip
       - ls -lh services/chat_handler/function.zip
+      - ls -lh services/document_manager/function.zip
+      - ls -lh services/websocket_handler/function.zip
   post_build:
     commands:
       - echo "Build complete - artifacts ready for deployment"
