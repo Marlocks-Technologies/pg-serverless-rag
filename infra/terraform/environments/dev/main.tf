@@ -8,21 +8,29 @@ terraform {
     }
   }
 
-  # backend "s3" {
-  #   # Fill in via backend.hcl or -backend-config flags:
-  #   #   bucket         = "<your-tf-state-bucket>"
-  #   #   key            = "rag/dev/terraform.tfstate"
-  #   #   region         = "us-east-1"
-  #   #   dynamodb_table = "<your-tf-lock-table>"
-  #   #   encrypt        = true
-  #   #
-  #   # Usage:
-  #   #   terraform init -backend-config=backend.hcl
-  # }
+  backend "s3" {
+    # Fill in via backend.hcl or -backend-config flags:
+    #   bucket         = "<your-tf-state-bucket>"
+    #   key            = "rag/dev/terraform.tfstate"
+    #   region         = "us-east-1"
+    #   dynamodb_table = "<your-tf-lock-table>"
+    #   encrypt        = true
+    #
+    # Usage:
+    #   terraform init -backend-config=backend.hcl
+  }
 }
 
 provider "aws" {
   region = var.aws_region
+
+  dynamic "assume_role" {
+    for_each = var.deploy_role_arn != "" ? [1] : []
+    content {
+      role_arn     = var.deploy_role_arn
+      session_name = "terraform-${var.environment}"
+    }
+  }
 
   default_tags {
     tags = local.common_tags

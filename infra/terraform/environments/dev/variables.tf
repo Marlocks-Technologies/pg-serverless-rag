@@ -21,6 +21,12 @@ variable "aws_account_id" {
   type        = string
 }
 
+variable "deploy_role_arn" {
+  description = "Optional cross-account role ARN to assume for AWS provider operations."
+  type        = string
+  default     = ""
+}
+
 variable "kms_key_arn" {
   description = "ARN of KMS key for encryption. Leave empty to use AES256/AWS-managed keys."
   type        = string
