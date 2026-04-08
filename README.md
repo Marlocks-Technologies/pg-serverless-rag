@@ -1,30 +1,19 @@
 # AWS Serverless RAG Platform
 
-Production-ready Retrieval-Augmented Generation platform built on AWS serverless services with **Amazon S3 Vectors** for cost-effective vector storage.
+Production-ready Retrieval-Augmented Generation platform built on AWS serverless services.
 
-## Vector Storage: S3 Vectors Only
+## Vector Storage (Current)
 
-**Amazon S3 Vectors** is used exclusively for vector storage, providing:
-- ✅ **Serverless** - No infrastructure to manage
-- ✅ **Cost-Effective** - $40/month vs $700/month for OpenSearch (94% savings)
-- ✅ **Scalable** - Handles billions of vectors automatically
-- ✅ **Production-Ready** - Available today
+Today, this repo stores embeddings as **JSON objects in a standard S3 bucket** (`rag-*-kb-vectors`) and performs similarity search by downloading those JSONs and computing cosine similarity in code.
 
-### Custom RAG Implementation
+This is sometimes referred to as “S3 vectors” in older docs, but it is **not** the Amazon S3 Vectors managed service/API.
 
-Since S3 is not yet available as a native Bedrock Knowledge Base backend, this platform implements a **custom RAG solution** that:
+## Vector Storage (Proper Amazon S3 Vectors)
 
-1. Uses S3 Vectors directly via boto3/SDK
-2. Generates embeddings manually via Bedrock Embeddings API (Titan v2)
-3. Implements custom similarity search with cosine similarity
-4. Provides full control over retrieval logic and ranking
+If you want the actual Amazon S3 Vectors service, you must use the dedicated API via `boto3.client("s3vectors")` and manage vector buckets + indexes, then write/query vectors using `put_vectors()` / `query_vectors()`.
 
-This approach delivers production functionality today at a fraction of the cost, with a clear migration path to Bedrock Knowledge Bases when S3 support becomes available.
-
-**References:**
-- [Amazon S3 Vectors](https://aws.amazon.com/s3/features/vectors/)
-- [S3 Vectors Documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors.html)
-- [Implementation Guide](docs/CUSTOM_RAG_S3_VECTORS.md)
+- **boto3 reference (S3Vectors)**: `https://docs.aws.amazon.com/boto3/latest/reference/services/s3vectors.html`
+- **Repo guide**: `docs/S3VECTORS_BOTO3_IMPLEMENTATION.md`
 
 ## Overview
 
