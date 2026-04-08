@@ -58,6 +58,8 @@ infra/terraform/.terraform.lock.hcl
 .coverage
 htmlcov/
 .pytest_cache/
+pdf/
+
 
 # Terraform
 .terraform/
