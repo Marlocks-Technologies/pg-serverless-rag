@@ -29,6 +29,29 @@ from shared.s3_helpers import upload_object
 logger = get_logger(__name__)
 
 
+def _decode_base64_file_content(content_base64) -> bytes:
+    """Decode upload payload; base64 strings must be ASCII-only (Python base64 requirement)."""
+    if content_base64 is None:
+        raise ValueError("Missing required field: content")
+    if not isinstance(content_base64, str):
+        raise ValueError("content must be a string (base64-encoded file bytes)")
+    # Ignore whitespace often added by clients (line wrapping)
+    cleaned = "".join(content_base64.split())
+    if not cleaned:
+        raise ValueError("content is empty")
+    try:
+        cleaned.encode("ascii")
+    except UnicodeEncodeError as exc:
+        raise ValueError(
+            "content must be standard base64 using only ASCII characters; "
+            "re-encode the file as base64 or remove non-ASCII characters from the payload"
+        ) from exc
+    try:
+        return base64.b64decode(cleaned, validate=False)
+    except Exception as exc:
+        raise ValueError(f"Invalid base64 content: {exc}") from exc
+
+
 class DocumentManager:
     """Manages document uploads and metadata."""
 
@@ -532,7 +555,14 @@ def _handle_upload(event, context, manager: DocumentManager, request_id: str):
                         "body": json.dumps({"error": "Missing required fields: filename, content"})
                     }
 
-                content = base64.b64decode(content_base64)
+                try:
+                    content = _decode_base64_file_content(content_base64)
+                except ValueError as err:
+                    return {
+                        "statusCode": 400,
+                        "headers": _cors_headers(),
+                        "body": json.dumps({"error": str(err)}),
+                    }
 
             except (json.JSONDecodeError, KeyError) as e:
                 return {
