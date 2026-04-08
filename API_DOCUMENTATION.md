@@ -2,7 +2,7 @@
 
 **Version:** 2.0.0
 **Base URL:** `https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev`
-**WebSocket URL:** `wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev`
+**WebSocket URL:** `wss://t4muis95q7.execute-api.eu-west-1.amazonaws.com/dev`
 **Environment:** Development
 **Region:** eu-west-1
 
@@ -696,7 +696,7 @@ Set these in Postman environment:
 ```json
 {
   "base_url": "https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev",
-  "websocket_url": "wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev",
+  "websocket_url": "wss://t4muis95q7.execute-api.eu-west-1.amazonaws.com/dev",
   "session_id": "postman-test-{{$timestamp}}"
 }
 ```
@@ -707,7 +707,7 @@ Set these in Postman environment:
 
 **Status:** ✅ Available
 
-**Endpoint:** `wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev`
+**Endpoint:** `wss://t4muis95q7.execute-api.eu-west-1.amazonaws.com/dev`
 
 **Use Case:** Streaming responses for real-time chat experience
 

@@ -205,7 +205,7 @@ def main():
     parser.add_argument(
         '--endpoint',
         help='WebSocket endpoint URL',
-        default='wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev'
+        default='wss://t4muis95q7.execute-api.eu-west-1.amazonaws.com/dev'
     )
     parser.add_argument(
         '--question',

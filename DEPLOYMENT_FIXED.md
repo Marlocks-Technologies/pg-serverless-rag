@@ -71,8 +71,8 @@ Document Source: rag-mt-dev-doc-staging/grouped/
 terraform output
 
 # Outputs:
-rest_api_url         = "https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev"
-websocket_endpoint   = "wss://ssm8rqpdzl.execute-api.eu-west-1.amazonaws.com/dev"
+rest_api_url         = "https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev"
+websocket_endpoint   = "wss://t4muis95q7.execute-api.eu-west-1.amazonaws.com/dev"
 knowledge_base_id    = "5KWEFXRWDE" (sensitive)
 ingestion_bucket     = "rag-mt-dev-doc-ingestion"
 staging_bucket       = "rag-mt-dev-doc-staging"
@@ -102,13 +102,13 @@ chat_history_table   = "rag-mt-dev-chat-history"
 
 ### 1. REST API Health Check ✅
 ```bash
-curl https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/health
+curl https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/health
 # Response: {"status":"healthy"}
 ```
 
 ### 2. Document Upload ✅
 ```bash
-curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents \
+curl -X POST https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/documents \
   -H "Content-Type: application/json" \
   -d '{"filename":"test.txt","content":"BASE64","contentType":"text/plain"}'
 
@@ -216,7 +216,7 @@ echo "This is a test document about AWS Lambda functions." > test.txt
 FILE_BASE64=$(base64 -i test.txt)
 
 # Upload via API
-curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/documents \
+curl -X POST https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/documents \
   -H "Content-Type: application/json" \
   -d "{
     \"filename\": \"aws-lambda-guide.txt\",
@@ -248,7 +248,7 @@ aws bedrock-agent start-ingestion-job \
 
 ### Step 4: Query with RAG
 ```bash
-curl -X POST https://67phkhhgq8.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
+curl -X POST https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev/chat/query \
   -H "Content-Type: application/json" \
   -d '{
     "question": "What are AWS Lambda functions?",

@@ -28,7 +28,7 @@ info:
 servers:
   - url: https://lh8dbbvwbb.execute-api.eu-west-1.amazonaws.com/dev
     description: Development REST API server
-  - url: wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev
+  - url: wss://t4muis95q7.execute-api.eu-west-1.amazonaws.com/dev
     description: Development WebSocket API server
 
 tags:

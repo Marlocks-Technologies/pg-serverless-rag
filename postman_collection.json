@@ -13,7 +13,7 @@
     },
     {
       "key": "websocket_url",
-      "value": "wss://9hc3a3ur4j.execute-api.eu-west-1.amazonaws.com/dev",
+      "value": "wss://t4muis95q7.execute-api.eu-west-1.amazonaws.com/dev",
       "type": "string"
     },
     {
